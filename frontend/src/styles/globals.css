@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  @apply bg-dark-900 text-white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-500 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary-600;
+}
+
+/* Utility classes */
+.glass {
+  @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-xl;
+}
+
+.glass-dark {
+  @apply bg-dark-800/50 backdrop-blur-md border border-white/10 rounded-xl;
+}
+
+.gradient-primary {
+  @apply bg-gradient-to-r from-primary-500 to-blue-600;
+}
+
+.btn-primary {
+  @apply px-6 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-blue-600 text-white font-medium hover:shadow-lg transition-all duration-300 cursor-pointer;
+}
+
+.btn-secondary {
+  @apply px-6 py-2 rounded-lg border border-primary-500 text-primary-500 font-medium hover:bg-primary-500 hover:text-white transition-all duration-300 cursor-pointer;
+}
+
+.input-field {
+  @apply w-full px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 transition-all duration-300;
+}
+
+.card {
+  @apply bg-dark-800 rounded-xl border border-dark-600 p-6 hover:border-primary-500 transition-all duration-300;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slideInFromLeft 0.5s ease-out forwards;
+}
+
+.animate-slide-right {
+  animation: slideInFromRight 0.5s ease-out forwards;
+}

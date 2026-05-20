@@ -1,0 +1,14 @@
+{
+  "login": "Login",
+  "register": "Register",
+  "dashboard": "Dashboard",
+  "notifications": "Notifications",
+  "adminPanel": "Admin Panel",
+  "platformAdmin": "Platform Admin",
+  "profile": "Profile",
+  "logout": "Logout",
+  "electra": "Electra",
+  "darkMode": "Dark",
+  "lightMode": "Light",
+  "language": "Language"
+}

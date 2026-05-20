@@ -1,0 +1,14 @@
+{
+  "login": "Iniciar sesión",
+  "register": "Registrarse",
+  "dashboard": "Tablero",
+  "notifications": "Notificaciones",
+  "adminPanel": "Panel Admin",
+  "platformAdmin": "Admin Plataforma",
+  "profile": "Perfil",
+  "logout": "Cerrar sesión",
+  "electra": "Electra",
+  "darkMode": "Oscuro",
+  "lightMode": "Claro",
+  "language": "Idioma"
+}
