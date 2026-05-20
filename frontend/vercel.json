@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": {
+      "description": "Backend API URL",
+      "value": "https://electra-backend.onrender.com/api"
+    },
+    "VITE_SOCKET_URL": {
+      "description": "Backend Socket URL",
+      "value": "https://electra-backend.onrender.com"
+    }
+  }
+}
