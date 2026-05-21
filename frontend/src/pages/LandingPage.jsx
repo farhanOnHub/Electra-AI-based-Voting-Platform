@@ -115,16 +115,34 @@ export const LandingPage = () => {
   return (
     <div className="w-full overflow-hidden">
       {/* Hero Section */}
-      <section className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 relative flex items-center">
+      <section className="min-h-screen relative flex items-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-dark-950 via-dark-900 to-primary-950"></div>
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
-            className="absolute top-20 left-10 w-72 h-72 bg-primary-500/20 rounded-full blur-3xl"
-            animate={{ y: [0, 50, 0] }}
-            transition={{ duration: 8, repeat: Infinity }}
+            className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/30 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+              x: [0, 100, 0]
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
           />
           <motion.div
-            className="absolute bottom-20 right-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"
-            animate={{ y: [50, 0, 50] }}
+            className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary-500/30 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1.2, 1, 1.2],
+              opacity: [0.5, 0.3, 0.5],
+              x: [0, -100, 0]
+            }}
+            transition={{ duration: 12, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent-500/20 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1, 1.5, 1],
+              opacity: [0.2, 0.4, 0.2],
+              y: [0, -50, 0]
+            }}
             transition={{ duration: 8, repeat: Infinity }}
           />
         </div>
@@ -136,23 +154,26 @@ export const LandingPage = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-primary-400 via-primary-500 to-blue-600 bg-clip-text text-transparent">
+            <div className="inline-block mb-6 px-4 py-2 rounded-full bg-primary-500/20 border border-primary-500/30">
+              <span className="text-primary-300 text-sm font-medium">✨ Trusted by 50,000+ users worldwide</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+              <span className="bg-gradient-to-r from-primary-400 via-secondary-400 to-accent-400 bg-clip-text text-transparent">
                 Secure Online Voting
               </span>
               <br />
-              Made Simple
+              <span className="text-white">Made Simple</span>
             </h1>
-            <p className="text-xl text-dark-300 max-w-2xl mx-auto mb-8">
+            <p className="text-xl text-dark-300 max-w-3xl mx-auto mb-10 leading-relaxed">
               The modern platform for fair, transparent, and secure voting. Perfect for colleges, organizations, events, and communities.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="btn-primary text-lg px-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link to="/register" className="btn-primary text-lg px-10 py-4">
                 Get Started Free
                 <ArrowRight className="inline ml-2" size={20} />
               </Link>
-              <a href="#features" className="btn-secondary text-lg px-8">
+              <a href="#features" className="btn-secondary text-lg px-10 py-4">
                 Learn More
               </a>
             </div>
@@ -169,17 +190,17 @@ export const LandingPage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-dark-800/50">
+      <section className="py-20 bg-dark-900/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, idx) => (
               <motion.div
                 key={idx}
                 {...fadeIn}
-                className="text-center"
+                className="text-center p-6 rounded-2xl bg-gradient-to-br from-dark-800/50 to-dark-900/50 border border-dark-700/50 hover:border-primary-500/30 transition-all duration-300"
               >
-                <p className="text-4xl md:text-5xl font-bold text-primary-400 mb-2">{stat.number}</p>
-                <p className="text-dark-300">{stat.label}</p>
+                <p className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent mb-2">{stat.number}</p>
+                <p className="text-dark-300 font-medium">{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -187,11 +208,11 @@ export const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 bg-gradient-to-b from-dark-800/30 to-dark-900">
+      <section id="features" className="py-24 bg-gradient-to-b from-dark-900/50 to-dark-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Powerful Features</h2>
-            <p className="text-xl text-dark-300">Everything you need for secure and efficient voting</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent">Powerful Features</h2>
+            <p className="text-xl text-dark-300 max-w-2xl mx-auto">Everything you need for secure and efficient voting</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -199,13 +220,13 @@ export const LandingPage = () => {
               <motion.div
                 key={idx}
                 {...fadeIn}
-                className="card hover:shadow-xl hover:shadow-primary-500/20"
+                className="card group"
               >
-                <div className="w-12 h-12 bg-primary-500/20 rounded-lg flex items-center justify-center text-primary-400 mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-xl flex items-center justify-center text-primary-400 mb-5 group-hover:scale-110 transition-transform duration-300">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-dark-300">{feature.description}</p>
+                <h3 className="text-xl font-semibold mb-3 text-white">{feature.title}</h3>
+                <p className="text-dark-300 leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -213,11 +234,11 @@ export const LandingPage = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-24 bg-dark-800/50">
+      <section className="py-24 bg-gradient-to-b from-dark-950 to-dark-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">How It Works</h2>
-            <p className="text-xl text-dark-300">Simple steps to secure voting</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-secondary-400 to-accent-400 bg-clip-text text-transparent">How It Works</h2>
+            <p className="text-xl text-dark-300 max-w-2xl mx-auto">Simple steps to secure voting</p>
           </motion.div>
 
           <div className="grid md:grid-cols-4 gap-8">
@@ -230,12 +251,12 @@ export const LandingPage = () => {
               <motion.div
                 key={idx}
                 {...fadeIn}
-                className="text-center"
+                className="text-center group"
               >
-                <div className="w-12 h-12 mx-auto bg-gradient-to-r from-primary-500 to-blue-600 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center text-2xl font-bold mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg shadow-primary-500/30">
                   {step.num}
                 </div>
-                <h3 className="font-semibold mb-2">{step.title}</h3>
+                <h3 className="font-semibold mb-2 text-lg text-white">{step.title}</h3>
                 <p className="text-dark-300">{step.desc}</p>
               </motion.div>
             ))}
@@ -244,11 +265,11 @@ export const LandingPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 bg-gradient-to-b from-dark-900 to-dark-800/50">
+      <section className="py-24 bg-gradient-to-b from-dark-900/50 to-dark-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Loved by Users</h2>
-            <p className="text-xl text-dark-300">See what our community has to say</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-accent-400 to-primary-400 bg-clip-text text-transparent">Loved by Users</h2>
+            <p className="text-xl text-dark-300 max-w-2xl mx-auto">See what our community has to say</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -256,18 +277,18 @@ export const LandingPage = () => {
               <motion.div
                 key={idx}
                 {...fadeIn}
-                className="card"
+                className="card group"
               >
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} className="fill-yellow-400 text-yellow-400" />
+                    <Star key={i} size={18} className="fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <p className="text-dark-300 mb-6">"{testimonial.text}"</p>
+                <p className="text-dark-300 mb-6 leading-relaxed italic">"{testimonial.text}"</p>
                 <div className="flex items-center gap-4">
-                  <div className="text-3xl">{testimonial.image}</div>
+                  <div className="text-4xl">{testimonial.image}</div>
                   <div>
-                    <p className="font-semibold">{testimonial.name}</p>
+                    <p className="font-semibold text-white">{testimonial.name}</p>
                     <p className="text-sm text-dark-400">{testimonial.role}</p>
                   </div>
                 </div>
@@ -278,11 +299,11 @@ export const LandingPage = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-24 bg-dark-800/50">
+      <section className="py-24 bg-gradient-to-b from-dark-950 to-dark-900/50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-xl text-dark-300">Find answers to common questions</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent">Frequently Asked Questions</h2>
+            <p className="text-xl text-dark-300 max-w-2xl mx-auto">Find answers to common questions</p>
           </motion.div>
 
           <div className="space-y-4">
@@ -290,20 +311,20 @@ export const LandingPage = () => {
               <motion.div
                 key={idx}
                 {...fadeIn}
-                className="card"
+                className="card group"
               >
                 <button
                   onClick={() => setExpandedFaq(expandedFaq === idx ? -1 : idx)}
-                  className="w-full flex justify-between items-center"
+                  className="w-full flex justify-between items-center text-left"
                 >
-                  <h3 className="font-semibold text-lg text-left">{item.question}</h3>
+                  <h3 className="font-semibold text-lg text-white">{item.question}</h3>
                   <ChevronDown
                     size={20}
-                    className={`transition-transform ${expandedFaq === idx ? 'rotate-180' : ''}`}
+                    className={`text-primary-400 transition-transform ${expandedFaq === idx ? 'rotate-180' : ''}`}
                   />
                 </button>
                 {expandedFaq === idx && (
-                  <p className="text-dark-300 mt-4 pt-4 border-t border-white/10">{item.answer}</p>
+                  <p className="text-dark-300 mt-4 pt-4 border-t border-white/10 leading-relaxed">{item.answer}</p>
                 )}
               </motion.div>
             ))}
@@ -312,15 +333,15 @@ export const LandingPage = () => {
       </section>
 
       {/* Contact Form */}
-      <section className="py-24 bg-gradient-to-b from-dark-900 to-dark-800">
+      <section className="py-24 bg-gradient-to-b from-dark-900/50 to-dark-950">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeIn} className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Get in Touch</h2>
-            <p className="text-xl text-dark-300">We'd love to hear from you</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-secondary-400 to-accent-400 bg-clip-text text-transparent">Get in Touch</h2>
+            <p className="text-xl text-dark-300 max-w-2xl mx-auto">We'd love to hear from you</p>
           </motion.div>
 
-          <form onSubmit={handleContactSubmit} className="glass p-8">
-            <div className="flex gap-4">
+          <form onSubmit={handleContactSubmit} className="card p-8">
+            <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="email"
                 value={email}
@@ -338,11 +359,12 @@ export const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary-600/20 to-blue-600/20 border-t border-primary-500/20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to Get Started?</h2>
-          <p className="text-xl text-dark-300 mb-8">Join thousands of organizations using Electra for secure voting</p>
-          <Link to="/register" className="btn-primary text-lg px-8 inline-block">
+      <section className="py-24 bg-gradient-to-r from-primary-600/20 via-secondary-600/20 to-accent-600/20 border-t border-primary-500/20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-secondary-500/10"></div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary-400 via-secondary-400 to-accent-400 bg-clip-text text-transparent">Ready to Get Started?</h2>
+          <p className="text-xl text-dark-300 mb-10 max-w-2xl mx-auto">Join thousands of organizations using Electra for secure voting</p>
+          <Link to="/register" className="btn-primary text-lg px-10 py-4 inline-block">
             Create Your First Event Today
             <ExternalLink className="inline ml-2" size={20} />
           </Link>
