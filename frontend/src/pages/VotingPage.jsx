@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { io } from 'socket.io-client';
-import { eventAPI, voteAPI, faceVerificationAPI } from '../utils/api';
+import { eventAPI, candidateAPI, voteAPI, faceVerificationAPI } from '../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, Users, Clock, Shield, AlertTriangle } from 'lucide-react';
 
 export const VotingPage = () => {
   const { eventId } = useParams();
@@ -20,6 +19,13 @@ export const VotingPage = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
+    if (!eventId) {
+      console.error('EventId is undefined');
+      toast.error('Invalid event ID');
+      navigate('/dashboard');
+      return;
+    }
+
     loadEventData();
     // initialize socket for live updates
     const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : '');
@@ -63,7 +69,7 @@ export const VotingPage = () => {
       const eventResponse = await eventAPI.getEventById(eventId);
       setEvent(eventResponse.event);
 
-      const candidatesResponse = await eventAPI.getCandidatesByEvent(eventId);
+      const candidatesResponse = await candidateAPI.getCandidatesByEvent(eventId);
       setCandidates(candidatesResponse.candidates);
 
       const voteStatus = await voteAPI.checkIfVoted(eventId);
@@ -73,7 +79,8 @@ export const VotingPage = () => {
       setFaceVerified(faceStatus.faceVerified);
       setFaceStatus(faceStatus);
     } catch (error) {
-      toast.error('Failed to load event');
+      console.error('Error loading event:', error);
+      toast.error(error.response?.data?.message || 'Failed to load event');
       navigate('/dashboard');
     } finally {
       setLoading(false);
@@ -287,7 +294,7 @@ export const VotingPage = () => {
               >
                 {candidate.image && (
                   <img
-                    src={candidate.image}
+                    src={`http://localhost:5000${candidate.image}`}
                     alt={candidate.name}
                     className="w-full h-48 object-cover rounded-lg mb-4"
                   />

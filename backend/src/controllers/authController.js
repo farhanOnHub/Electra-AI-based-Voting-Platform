@@ -53,21 +53,27 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('Login attempt for email:', email);
+
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
+      console.log('User not found for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isPasswordMatch = await user.matchPassword(password);
     if (!isPasswordMatch) {
+      console.log('Password mismatch for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const token = generateToken(user._id, user.role);
+
+    console.log('Login successful for user:', user.email);
 
     res.json({
       message: 'Login successful',
@@ -81,6 +87,7 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: error.message });
   }
 };

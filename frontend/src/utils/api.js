@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance
 export const api = axios.create({
@@ -41,11 +41,35 @@ export const authAPI = {
 
 // Event API
 export const eventAPI = {
-  createEvent: (data) => api.post('/events', data),
+  createEvent: (data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+      if (data[key] !== null && data[key] !== undefined) {
+        formData.append(key, data[key]);
+      }
+    });
+    return api.post('/events', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
   getEvents: (filters) => api.get('/events', { params: filters }),
   getEventById: (id) => api.get(`/events/${id}`),
   getEventByCode: (code) => api.post('/events/code', { eventCode: code }),
-  updateEvent: (id, data) => api.put(`/events/${id}`, data),
+  updateEvent: (id, data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+      if (data[key] !== null && data[key] !== undefined) {
+        formData.append(key, data[key]);
+      }
+    });
+    return api.put(`/events/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
   deleteEvent: (id) => api.delete(`/events/${id}`),
   joinEvent: (code) => api.post('/events/join', { eventCode: code }),
   getUserEvents: () => api.get('/events/user/events'),
@@ -55,8 +79,28 @@ export const eventAPI = {
 
 // Candidate API
 export const candidateAPI = {
-  addCandidate: (data) => api.post('/candidates', data),
-  updateCandidate: (id, data) => api.put(`/candidates/${id}`, data),
+  addCandidate: (data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+      formData.append(key, data[key]);
+    });
+    return api.post('/candidates', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+  updateCandidate: (id, data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+      formData.append(key, data[key]);
+    });
+    return api.put(`/candidates/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
   deleteCandidate: (id) => api.delete(`/candidates/${id}`),
   getCandidatesByEvent: (eventId) => api.get(`/candidates/event/${eventId}`)
 };

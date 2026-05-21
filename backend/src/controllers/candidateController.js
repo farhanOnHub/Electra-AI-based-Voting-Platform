@@ -1,9 +1,15 @@
 import Candidate from '../models/Candidate.js';
 import Event from '../models/Event.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const addCandidate = async (req, res) => {
   try {
-    const { eventId, name, image, bio, position } = req.body;
+    const { eventId, name, bio, position } = req.body;
+    const image = req.file ? `/uploads/candidates/${req.file.filename}` : null;
 
     const event = await Event.findById(eventId);
     if (!event) {
@@ -39,7 +45,8 @@ export const addCandidate = async (req, res) => {
 
 export const updateCandidate = async (req, res) => {
   try {
-    const { name, image, bio, position } = req.body;
+    const { name, bio, position } = req.body;
+    const image = req.file ? `/uploads/candidates/${req.file.filename}` : req.body.image;
 
     const candidate = await Candidate.findById(req.params.id);
     if (!candidate) {

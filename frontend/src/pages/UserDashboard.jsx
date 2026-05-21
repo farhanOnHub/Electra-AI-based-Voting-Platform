@@ -22,12 +22,15 @@ export const UserDashboard = () => {
   const loadUserData = async () => {
     try {
       const response = await eventAPI.getUserEvents();
+      console.log('User events response:', response);
       setJoinedEvents(response.joinedEvents || []);
       setVotedEvents(response.votedEvents || []);
-      
+
       const allEventsResponse = await eventAPI.getEvents();
+      console.log('All events response:', allEventsResponse);
       setAllEvents(allEventsResponse.events || []);
     } catch (error) {
+      console.error('Error loading user data:', error);
       toast.error('Failed to load events');
     } finally {
       setLoading(false);
@@ -64,6 +67,8 @@ export const UserDashboard = () => {
     const status = getEventStatus(event);
     const hasVoted = votedEvents.some(v => v._id === event._id);
 
+    console.log('EventCard rendering:', event._id, event.title);
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -84,7 +89,7 @@ export const UserDashboard = () => {
           </span>
         </div>
         <p className="text-dark-300 text-sm mb-4">{event.description}</p>
-        
+
         <div className="space-y-2 mb-4 text-sm text-dark-400">
           <p className="flex items-center gap-2">
             <Users size={16} /> {event.participants?.length || 0} participants
@@ -103,7 +108,15 @@ export const UserDashboard = () => {
 
         {status === 'Active' && !hasVoted && (
           <button
-            onClick={() => onVote(event._id)}
+            onClick={() => {
+              console.log('Vote Now clicked for event:', event._id, event.title);
+              if (!event._id) {
+                console.error('Event ID is undefined');
+                toast.error('Invalid event ID');
+                return;
+              }
+              onVote(event._id);
+            }}
             className="btn-primary w-full"
           >
             Vote Now
@@ -205,9 +218,15 @@ export const UserDashboard = () => {
             joinedEvents.length > 0 ? (
               joinedEvents.map(event => (
                 <EventCard
-                  key={event._id}
+                  key={event._id || event.eventCode}
                   event={event}
-                  onVote={(eventId) => window.location.href = `/voting/${eventId}`}
+                  onVote={(eventId) => {
+                    if (!eventId) {
+                      toast.error('Invalid event ID');
+                      return;
+                    }
+                    window.location.href = `/voting/${eventId}`;
+                  }}
                 />
               ))
             ) : (
@@ -234,13 +253,23 @@ export const UserDashboard = () => {
           {activeTab === 'available' && (
             allEvents
               .filter(event => !joinedEvents.some(e => e._id === event._id) && event.title.toLowerCase().includes(searchQuery))
-              .map(event => (
-                <EventCard
-                  key={event._id}
-                  event={event}
-                  onVote={(eventId) => window.location.href = `/voting/${eventId}`}
-                />
-              ))
+              .map(event => {
+                console.log('Available event:', event._id, event.title);
+                return (
+                  <EventCard
+                    key={event._id || event.eventCode}
+                    event={event}
+                    onVote={(eventId) => {
+                      console.log('Vote clicked for available event:', eventId);
+                      if (!eventId) {
+                        toast.error('Invalid event ID');
+                        return;
+                      }
+                      window.location.href = `/voting/${eventId}`;
+                    }}
+                  />
+                );
+              })
           )}
         </div>
       </div>

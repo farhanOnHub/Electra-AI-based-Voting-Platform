@@ -14,6 +14,14 @@ const eventSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  position: {
+    type: String,
+    default: ''
+  },
+  bio: {
+    type: String,
+    default: ''
+  },
   organizer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

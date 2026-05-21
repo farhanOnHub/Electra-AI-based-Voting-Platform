@@ -10,7 +10,10 @@ const generateEventCode = () => {
 
 export const createEvent = async (req, res) => {
   try {
-    const { title, description, startTime, endTime, banner } = req.body;
+    const { title, description, startTime, endTime, position, bio } = req.body;
+    const banner = req.file ? `/uploads/events/${req.file.filename}` : req.body.banner;
+
+    console.log('Creating event with data:', { title, description, startTime, endTime, position, bio });
 
     const event = new Event({
       title,
@@ -18,6 +21,8 @@ export const createEvent = async (req, res) => {
       startTime,
       endTime,
       banner,
+      position,
+      bio,
       organizer: req.userId,
       eventCode: generateEventCode(),
       status: 'upcoming'
@@ -29,11 +34,14 @@ export const createEvent = async (req, res) => {
 
     await event.save();
 
+    console.log('Event created with ID:', event._id);
+
     res.status(201).json({
       message: 'Event created successfully',
       event
     });
   } catch (error) {
+    console.error('Error creating event:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -51,8 +59,28 @@ export const getEvents = async (req, res) => {
       .populate('candidates')
       .sort({ createdAt: -1 });
 
-    res.json({ events });
+    console.log('Found events:', events.length);
+    events.forEach(event => {
+      console.log('Event:', event._id.toString(), event.title);
+    });
+
+    // Convert ObjectIds to strings for JSON serialization
+    const eventsWithStrings = events.map(event => ({
+      ...event.toObject(),
+      _id: event._id.toString(),
+      organizer: event.organizer ? {
+        ...event.organizer.toObject(),
+        _id: event.organizer._id.toString()
+      } : null,
+      candidates: event.candidates.map(c => ({
+        ...c.toObject(),
+        _id: c._id.toString()
+      }))
+    }));
+
+    res.json({ events: eventsWithStrings });
   } catch (error) {
+    console.error('Error getting events:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -94,7 +122,8 @@ export const getEventByCode = async (req, res) => {
 
 export const updateEvent = async (req, res) => {
   try {
-    const { title, description, startTime, endTime, status, isResultsVisible, banner } = req.body;
+    const { title, description, startTime, endTime, status, isResultsVisible, position, bio } = req.body;
+    const banner = req.file ? `/uploads/events/${req.file.filename}` : req.body.banner;
 
     const event = await Event.findById(req.params.id);
     if (!event) {
@@ -106,7 +135,7 @@ export const updateEvent = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    Object.assign(event, { title, description, startTime, endTime, status, isResultsVisible, banner });
+    Object.assign(event, { title, description, startTime, endTime, status, isResultsVisible, banner, position, bio });
     await event.save();
 
     res.json({
@@ -174,11 +203,26 @@ export const getUserEvents = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate('joinedEvents').populate('votedEvents');
 
+    console.log('User joinedEvents:', user.joinedEvents);
+    console.log('User votedEvents:', user.votedEvents);
+
+    // Convert ObjectIds to strings
+    const joinedEventsWithStrings = (user.joinedEvents || []).map(event => ({
+      ...event.toObject(),
+      _id: event._id.toString()
+    }));
+
+    const votedEventsWithStrings = (user.votedEvents || []).map(event => ({
+      ...event.toObject(),
+      _id: event._id.toString()
+    }));
+
     res.json({
-      joinedEvents: user.joinedEvents,
-      votedEvents: user.votedEvents
+      joinedEvents: joinedEventsWithStrings,
+      votedEvents: votedEventsWithStrings
     });
   } catch (error) {
+    console.error('Error in getUserEvents:', error);
     res.status(500).json({ message: error.message });
   }
 };

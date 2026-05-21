@@ -41,12 +41,15 @@ connectDB();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: config.clientUrl,
+  origin: ['http://localhost:3000', 'http://localhost:3001', config.clientUrl],
   credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
 
 // Rate limiting
 const limiter = rateLimit({

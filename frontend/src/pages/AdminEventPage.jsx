@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { eventAPI, publicResultsAPI, qrAPI, aiAPI } from '../utils/api';
+import { eventAPI, candidateAPI, publicResultsAPI, qrAPI, aiAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, QrCode, Share2, Download } from 'lucide-react';
+import { ArrowLeft, Save, QrCode, Share2, Download, Plus, Trash2, Upload } from 'lucide-react';
 
 export const AdminEventPage = () => {
   const { eventId } = useParams();
@@ -18,6 +18,9 @@ export const AdminEventPage = () => {
   const [fraudResult, setFraudResult] = useState(null);
   const [predictionResult, setPredictionResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [candidateForm, setCandidateForm] = useState({ name: '', bio: '', position: '', image: null });
+  const [candidateImagePreview, setCandidateImagePreview] = useState(null);
+  const [showCandidateForm, setShowCandidateForm] = useState(false);
 
   const loadEvent = async () => {
     try {
@@ -119,6 +122,47 @@ export const AdminEventPage = () => {
     }
   };
 
+  const handleAddCandidate = async (e) => {
+    e.preventDefault();
+    try {
+      const candidateData = new FormData();
+      candidateData.append('eventId', eventId);
+      candidateData.append('name', candidateForm.name);
+      candidateData.append('bio', candidateForm.bio);
+      candidateData.append('position', candidateForm.position);
+      if (candidateForm.image) {
+        candidateData.append('image', candidateForm.image);
+      }
+
+      await candidateAPI.addCandidate(candidateData);
+      toast.success('Candidate added successfully');
+      setCandidateForm({ name: '', bio: '', position: '', image: null });
+      setCandidateImagePreview(null);
+      setShowCandidateForm(false);
+      loadEvent();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add candidate');
+    }
+  };
+
+  const handleCandidateImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCandidateForm({ ...candidateForm, image: file });
+      setCandidateImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleDeleteCandidate = async (candidateId) => {
+    try {
+      await candidateAPI.deleteCandidate(candidateId);
+      toast.success('Candidate deleted successfully');
+      loadEvent();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete candidate');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -138,7 +182,7 @@ export const AdminEventPage = () => {
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold">Manage Event</h1>
-              <p className="text-dark-400">Edit event details and publish results or QR codes.</p>
+              <p className="text-dark-400">Edit event details, manage candidates, and publish results.</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <button onClick={handleGenerateQR} className="btn-secondary flex items-center gap-2">
@@ -150,6 +194,111 @@ export const AdminEventPage = () => {
               <button onClick={() => handleExport('json')} className="btn-secondary flex items-center gap-2">
                 <Download size={18} /> Export JSON
               </button>
+            </div>
+          </div>
+
+          {/* Candidates Section */}
+          <div className="mt-8 pt-8 border-t border-white/10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Candidates</h2>
+              <button onClick={() => setShowCandidateForm(!showCandidateForm)} className="btn-primary flex items-center gap-2">
+                <Plus size={18} /> Add Candidate
+              </button>
+            </div>
+
+            {showCandidateForm && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="glass p-6 rounded-xl mb-6"
+              >
+                <form onSubmit={handleAddCandidate} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Candidate Name</label>
+                    <input
+                      type="text"
+                      value={candidateForm.name}
+                      onChange={(e) => setCandidateForm({ ...candidateForm, name: e.target.value })}
+                      placeholder="Enter candidate name"
+                      className="input-field w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Position/Role</label>
+                    <input
+                      type="text"
+                      value={candidateForm.position}
+                      onChange={(e) => setCandidateForm({ ...candidateForm, position: e.target.value })}
+                      placeholder="e.g., President, Vice President"
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Bio</label>
+                    <textarea
+                      value={candidateForm.bio}
+                      onChange={(e) => setCandidateForm({ ...candidateForm, bio: e.target.value })}
+                      placeholder="Candidate description and qualifications"
+                      className="input-field w-full min-h-[100px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Photo</label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCandidateImageChange}
+                        className="hidden"
+                        id="candidate-image"
+                      />
+                      <label
+                        htmlFor="candidate-image"
+                        className="btn-secondary flex items-center gap-2 cursor-pointer"
+                      >
+                        <Upload size={18} /> Upload Photo
+                      </label>
+                      {candidateImagePreview && (
+                        <img src={candidateImagePreview} alt="Preview" className="w-20 h-20 object-cover rounded-lg" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button type="submit" className="btn-primary">Add Candidate</button>
+                    <button type="button" onClick={() => setShowCandidateForm(false)} className="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+
+            {/* Existing Candidates */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {event?.candidates?.map((candidate) => (
+                <div key={candidate._id} className="glass p-4 rounded-xl relative group">
+                  <button
+                    onClick={() => handleDeleteCandidate(candidate._id)}
+                    className="absolute top-2 right-2 p-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 size={16} className="text-red-400" />
+                  </button>
+                  {candidate.image && (
+                    <img
+                      src={`http://localhost:5000${candidate.image}`}
+                      alt={candidate.name}
+                      className="w-full h-32 object-cover rounded-lg mb-3"
+                    />
+                  )}
+                  <h3 className="font-semibold text-white">{candidate.name}</h3>
+                  {candidate.position && (
+                    <p className="text-primary-400 text-sm">{candidate.position}</p>
+                  )}
+                  {candidate.bio && (
+                    <p className="text-dark-300 text-sm mt-2 line-clamp-2">{candidate.bio}</p>
+                  )}
+                  <p className="text-dark-400 text-xs mt-2">Votes: {candidate.voteCount}</p>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
 
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   // Initialize auth on mount
   useEffect(() => {
@@ -45,12 +45,17 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login to:', `${apiUrl}/auth/login`);
+      console.log('Email:', email);
       const response = await axios.post(`${apiUrl}/auth/login`, { email, password });
+      console.log('Login response:', response.data);
       setToken(response.data.token);
       setUser(response.data.user);
       localStorage.setItem('token', response.data.token);
       return response.data;
     } catch (error) {
+      console.error('Login error:', error);
+      console.error('Error response:', error.response?.data);
       throw error.response?.data || { message: 'Login failed' };
     }
   };
