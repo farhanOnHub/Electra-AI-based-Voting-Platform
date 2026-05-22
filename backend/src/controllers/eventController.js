@@ -52,7 +52,11 @@ export const getEvents = async (req, res) => {
 
     let filter = {};
     if (status) filter.status = status;
-    if (search) filter.title = { $regex: search, $options: 'i' };
+    if (search) {
+      // Sanitize search input to prevent NoSQL injection
+      const sanitizedSearch = search.replace(/[{}$]/g, '');
+      filter.title = { $regex: sanitizedSearch, $options: 'i' };
+    }
 
     const events = await Event.find(filter)
       .populate('organizer', 'name email')
@@ -154,16 +158,38 @@ export const deleteEvent = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    if (event.organizer.toString() !== req.userId) {
-      return res.status(403).json({ message: 'Unauthorized' });
+    // Get the current user to check role
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
+    // Allow deletion if user is admin/super_admin or the organizer
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+    const isOrganizer = event.organizer.toString() === req.userId;
+
+    if (!isAdmin && !isOrganizer) {
+      return res.status(403).json({ message: 'Unauthorized - only event organizers and admins can delete events' });
+    }
+
+    // Delete event and all related data
     await Event.findByIdAndDelete(req.params.id);
     await Candidate.deleteMany({ eventId: req.params.id });
     await Vote.deleteMany({ eventId: req.params.id });
 
+    // Remove event from users' joinedEvents and votedEvents
+    await User.updateMany(
+      { joinedEvents: req.params.id },
+      { $pull: { joinedEvents: req.params.id } }
+    );
+    await User.updateMany(
+      { votedEvents: req.params.id },
+      { $pull: { votedEvents: req.params.id } }
+    );
+
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {
+    console.error('Error deleting event:', error);
     res.status(500).json({ message: error.message });
   }
 };

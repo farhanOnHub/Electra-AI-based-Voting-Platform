@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: electra-backend
+    name: electra
     env: node
     plan: free
-    buildCommand: cd backend && npm install
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
     startCommand: cd backend && npm start
     envVars:
       - key: PORT
@@ -19,4 +19,4 @@ services:
       - key: JWT_EXPIRATION
         value: 24h
       - key: CLIENT_URL
-        value: https://electra-frontend.vercel.app
+        value: https://electra.onrender.com

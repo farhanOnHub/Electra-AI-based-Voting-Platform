@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { Menu, X, LogOut, User, Home, Vote } from 'lucide-react';
-import { t, changeLanguage, getLanguage } from '../utils/i18nSimple';
+import LanguageSelector from './LanguageSelector';
 
 export const Navbar = () => {
+  const { t } = useTranslation();
   const { user, logout, isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -32,10 +34,10 @@ export const Navbar = () => {
               <>
                 <div className="flex items-center gap-4">
                   <Link to="/login" className="px-6 py-2.5 border-2 border-green-500 text-green-600 rounded-full font-semibold hover:bg-green-50 transition">
-                    Log in
+                    {t('auth.login')}
                   </Link>
                   <Link to="/register" className="px-6 py-2.5 bg-green-500 text-white rounded-full font-semibold hover:bg-green-600 transition">
-                    Register
+                    {t('auth.register')}
                   </Link>
                 </div>
               </>
@@ -43,30 +45,19 @@ export const Navbar = () => {
               <>
                 <Link to="/dashboard" className="text-gray-600 hover:text-green-600 transition flex items-center gap-2 font-medium">
                   <Home size={18} />
-                  {t('dashboard')}
+                  {t('navigation.dashboard')}
                 </Link>
                 <Link to="/notifications" className="text-gray-600 hover:text-green-600 transition font-medium">
-                  {t('notifications')}
+                  {t('navigation.notifications')}
                 </Link>
                 {user?.role === 'admin' && (
-                  <Link to="/admin" className="text-gray-600 hover:text-green-600 transition font-medium">{t('adminPanel')}</Link>
+                  <Link to="/admin" className="text-gray-600 hover:text-green-600 transition font-medium">{t('navigation.adminPanel')}</Link>
                 )}
                 {user?.role === 'superAdmin' && (
-                  <Link to="/admin/super" className="text-gray-600 hover:text-green-600 transition font-medium">{t('platformAdmin')}</Link>
+                  <Link to="/admin/super" className="text-gray-600 hover:text-green-600 transition font-medium">{t('navigation.platformAdmin')}</Link>
                 )}
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-3">
-                    <select
-                      aria-label="Language"
-                      defaultValue={getLanguage()}
-                      onChange={(e) => changeLanguage(e.target.value)}
-                      className="bg-transparent border border-gray-300 text-gray-700 px-2 py-1 rounded"
-                    >
-                      <option value="en">EN</option>
-                      <option value="es">ES</option>
-                    </select>
-                  </div>
-
+                  <LanguageSelector />
                   <Link to="/profile" className="text-gray-600 hover:text-green-600 transition">
                     <User size={20} />
                   </Link>
@@ -94,15 +85,7 @@ export const Navbar = () => {
         {menuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4 space-y-4 bg-white">
             <div className="flex items-center gap-3 px-2">
-              <select
-                aria-label="Language"
-                defaultValue={localStorage.getItem('language') || 'en'}
-                onChange={(e) => changeLanguage(e.target.value)}
-                className="bg-transparent border border-gray-300 text-gray-700 px-2 py-1 rounded"
-              >
-                <option value="en">EN</option>
-                <option value="es">ES</option>
-              </select>
+              <LanguageSelector />
             </div>
 
             {!isAuthenticated ? (
@@ -112,19 +95,19 @@ export const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/dashboard" className="block text-gray-600 hover:text-green-600 px-2">{t('dashboard')}</Link>
+                <Link to="/dashboard" className="block text-gray-600 hover:text-green-600 px-2">Dashboard</Link>
                 {user?.role === 'admin' && (
-                  <Link to="/admin" className="block text-gray-600 hover:text-green-600 px-2">{t('adminPanel')}</Link>
+                  <Link to="/admin" className="block text-gray-600 hover:text-green-600 px-2">Admin Panel</Link>
                 )}
                 {user?.role === 'superAdmin' && (
-                  <Link to="/admin/super" className="block text-gray-600 hover:text-green-600 px-2">{t('platformAdmin')}</Link>
+                  <Link to="/admin/super" className="block text-gray-600 hover:text-green-600 px-2">Platform Admin</Link>
                 )}
-                <Link to="/profile" className="block text-gray-600 hover:text-green-600 px-2">{t('profile')}</Link>
+                <Link to="/profile" className="block text-gray-600 hover:text-green-600 px-2">Profile</Link>
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left text-red-500 hover:text-red-600 px-2"
                 >
-                  {t('logout')}
+                  Logout
                 </button>
               </>
             )}

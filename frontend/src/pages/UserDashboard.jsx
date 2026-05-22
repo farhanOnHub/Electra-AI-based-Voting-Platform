@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventAPI, voteAPI } from '../utils/api';
 import toast from 'react-hot-toast';
@@ -7,6 +8,7 @@ import { Calendar, Users, CheckCircle, Lock, Search, Plus, Code } from 'lucide-r
 
 export const UserDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('joined');
   const [joinedEvents, setJoinedEvents] = useState([]);
   const [votedEvents, setVotedEvents] = useState([]);
@@ -22,15 +24,12 @@ export const UserDashboard = () => {
   const loadUserData = async () => {
     try {
       const response = await eventAPI.getUserEvents();
-      console.log('User events response:', response);
       setJoinedEvents(response.joinedEvents || []);
       setVotedEvents(response.votedEvents || []);
 
       const allEventsResponse = await eventAPI.getEvents();
-      console.log('All events response:', allEventsResponse);
       setAllEvents(allEventsResponse.events || []);
     } catch (error) {
-      console.error('Error loading user data:', error);
       toast.error('Failed to load events');
     } finally {
       setLoading(false);
@@ -40,16 +39,12 @@ export const UserDashboard = () => {
   const handleJoinEvent = async (e) => {
     e.preventDefault();
     try {
-      const event = await eventAPI.getEventByCode(eventCode);
-      if (!joinedEvents.some(e => e._id === event._id)) {
-        setJoinedEvents([...joinedEvents, event]);
-        toast.success('Successfully joined event!');
-        setEventCode('');
-      } else {
-        toast.error('Already joined this event');
-      }
+      await eventAPI.joinEvent(eventCode);
+      await loadUserData();
+      toast.success('Successfully joined event!');
+      setEventCode('');
     } catch (error) {
-      toast.error('Event not found or invalid code');
+      toast.error(error.response?.data?.message || 'Event not found or invalid code');
     }
   };
 
@@ -66,8 +61,6 @@ export const UserDashboard = () => {
   const EventCard = ({ event, onVote }) => {
     const status = getEventStatus(event);
     const hasVoted = votedEvents.some(v => v._id === event._id);
-
-    console.log('EventCard rendering:', event._id, event.title);
 
     return (
       <motion.div
@@ -109,9 +102,7 @@ export const UserDashboard = () => {
         {status === 'Active' && !hasVoted && (
           <button
             onClick={() => {
-              console.log('Vote Now clicked for event:', event._id, event.title);
               if (!event._id) {
-                console.error('Event ID is undefined');
                 toast.error('Invalid event ID');
                 return;
               }
@@ -225,7 +216,8 @@ export const UserDashboard = () => {
                       toast.error('Invalid event ID');
                       return;
                     }
-                    window.location.href = `/voting/${eventId}`;
+                    console.log('Navigating to voting page with eventId:', eventId);
+                    navigate(`/voting/${eventId}`);
                   }}
                 />
               ))
@@ -253,23 +245,19 @@ export const UserDashboard = () => {
           {activeTab === 'available' && (
             allEvents
               .filter(event => !joinedEvents.some(e => e._id === event._id) && event.title.toLowerCase().includes(searchQuery))
-              .map(event => {
-                console.log('Available event:', event._id, event.title);
-                return (
-                  <EventCard
-                    key={event._id || event.eventCode}
-                    event={event}
-                    onVote={(eventId) => {
-                      console.log('Vote clicked for available event:', eventId);
-                      if (!eventId) {
-                        toast.error('Invalid event ID');
-                        return;
-                      }
-                      window.location.href = `/voting/${eventId}`;
-                    }}
-                  />
-                );
-              })
+              .map(event => (
+                <EventCard
+                  key={event._id || event.eventCode}
+                  event={event}
+                  onVote={(eventId) => {
+                    if (!eventId) {
+                      toast.error('Invalid event ID');
+                      return;
+                    }
+                    window.location.href = `/voting/${eventId}`;
+                  }}
+                />
+              ))
           )}
         </div>
       </div>

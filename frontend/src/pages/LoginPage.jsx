@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Mail, Lock, Loader } from 'lucide-react';
 
 export const LoginPage = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -21,10 +23,10 @@ export const LoginPage = () => {
 
     try {
       await login(formData.email, formData.password);
-      toast.success('Login successful!');
+      toast.success(t('auth.loginSuccess'));
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.message || 'Login failed');
+      toast.error(error.message || t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -36,9 +38,9 @@ export const LoginPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-400 to-blue-500 bg-clip-text text-transparent mb-2">
-            Welcome Back
+            {t('auth.welcome')}
           </h1>
-          <p className="text-dark-400">Sign in to your Electra account</p>
+          <p className="text-dark-400">{t('auth.signInToAccount')}</p>
         </div>
 
         {/* Form Card */}
@@ -46,7 +48,7 @@ export const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium mb-2">Email Address</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
@@ -63,7 +65,7 @@ export const LoginPage = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
@@ -80,7 +82,7 @@ export const LoginPage = () => {
 
             {/* Forgot Password */}
             <Link to="/forgot-password" className="text-primary-400 hover:text-primary-300 text-sm">
-              Forgot password?
+              {t('auth.forgotPassword')}
             </Link>
 
             {/* Submit Button */}
@@ -90,7 +92,7 @@ export const LoginPage = () => {
               className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading && <Loader size={20} className="animate-spin" />}
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('auth.signingIn') : t('auth.signIn')}
             </button>
           </form>
         </div>
@@ -98,9 +100,9 @@ export const LoginPage = () => {
         {/* Sign Up Link */}
         <div className="text-center">
           <p className="text-dark-400">
-            Don't have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link to="/register" className="text-primary-400 hover:text-primary-300 font-medium">
-              Register here
+              {t('auth.signUp')}
             </Link>
           </p>
         </div>

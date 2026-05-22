@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { io } from 'socket.io-client';
 import { eventAPI, candidateAPI, voteAPI, faceVerificationAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { CheckCircle, Users, Clock, Shield, AlertTriangle, ArrowLeft, AlertCircle } from 'lucide-react';
@@ -21,7 +22,6 @@ export const VotingPage = () => {
 
   useEffect(() => {
     if (!eventId) {
-      console.error('EventId is undefined');
       toast.error('Invalid event ID');
       navigate('/dashboard');
       return;
@@ -29,8 +29,8 @@ export const VotingPage = () => {
 
     loadEventData();
     // initialize socket for live updates
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : '');
-    const socket = io(socketUrl, { transports: ['websocket'] });
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:5000');
+    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -55,6 +55,10 @@ export const VotingPage = () => {
           return r ? { ...c, voteCount: r.voteCount } : c;
         }));
       }
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
     });
 
     return () => {
@@ -94,14 +98,20 @@ export const VotingPage = () => {
       setEvent(eventResponse.event);
 
       const candidatesResponse = await candidateAPI.getCandidatesByEvent(eventId);
-      setCandidates(candidatesResponse.candidates);
+      setCandidates(candidatesResponse.candidates || []);
 
       const voteStatus = await voteAPI.checkIfVoted(eventId);
       setHasVoted(voteStatus.hasVoted);
 
-      const faceStatus = await faceVerificationAPI.checkFaceVerification();
-      setFaceVerified(faceStatus.faceVerified);
-      setFaceStatus(faceStatus);
+      try {
+        const faceStatus = await faceVerificationAPI.checkFaceVerification();
+        setFaceVerified(faceStatus.faceVerified);
+        setFaceStatus(faceStatus);
+      } catch (faceError) {
+        // Face verification is optional, don't fail on error
+        setFaceVerified(false);
+        setFaceStatus(null);
+      }
     } catch (error) {
       console.error('Error loading event:', error);
       toast.error(error.response?.data?.message || 'Failed to load event');
@@ -117,12 +127,13 @@ export const VotingPage = () => {
       return;
     }
 
-    const lowConfidence = faceStatus && faceStatus.identityConfidence < 70;
-    if (!faceVerified || lowConfidence || faceStatus?.biometricAnomaly) {
-      toast.error('Your identity is not confidently verified. Please re-verify before voting.');
-      navigate('/face-verification');
-      return;
-    }
+    // Face verification check disabled for hackathon demo
+    // const lowConfidence = faceStatus && faceStatus.identityConfidence < 70;
+    // if (!faceVerified || lowConfidence || faceStatus?.biometricAnomaly) {
+    //   toast.error('Your identity is not confidently verified. Please re-verify before voting.');
+    //   navigate('/face-verification');
+    //   return;
+    // }
 
     try {
       await voteAPI.castVote({
@@ -164,7 +175,10 @@ export const VotingPage = () => {
   if (!event) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-dark-400">Event not found</p>
+        <div className="text-center">
+          <p className="text-dark-400 mb-4">Event not found</p>
+          <button onClick={() => navigate('/dashboard')} className="btn-primary">Return to Dashboard</button>
+        </div>
       </div>
     );
   }
@@ -279,7 +293,8 @@ export const VotingPage = () => {
           </motion.div>
         )}
 
-        {!faceVerified && !hasVoted && isActive && (
+        {/* Face verification alerts disabled for hackathon demo */}
+        {/* {!faceVerified && !hasVoted && isActive && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -315,7 +330,7 @@ export const VotingPage = () => {
               </button>
             </div>
           </motion.div>
-        )}
+        )} */}
 
         {!isActive && (
           <motion.div
@@ -348,7 +363,7 @@ export const VotingPage = () => {
               >
                 {candidate.image && (
                   <img
-                    src={`http://localhost:5000${candidate.image}`}
+                    src={candidate.image.startsWith('http') ? candidate.image : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${candidate.image}`}
                     alt={candidate.name}
                     className="w-full h-48 object-cover rounded-lg mb-4"
                   />

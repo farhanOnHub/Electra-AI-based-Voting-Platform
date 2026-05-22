@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import { authAPI } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -8,17 +8,13 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
   // Initialize auth on mount
   useEffect(() => {
     const initAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get(`${apiUrl}/auth/profile`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setUser(response.data.user);
+          const response = await authAPI.getProfile();
+          setUser(response.user);
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           setToken(null);
@@ -29,15 +25,15 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
-  }, [token, apiUrl]);
+  }, [token]);
 
   const register = async (userData) => {
     try {
-      const response = await axios.post(`${apiUrl}/auth/register`, userData);
-      setToken(response.data.token);
-      setUser(response.data.user);
-      localStorage.setItem('token', response.data.token);
-      return response.data;
+      const response = await authAPI.register(userData);
+      setToken(response.token);
+      setUser(response.user);
+      localStorage.setItem('token', response.token);
+      return response;
     } catch (error) {
       throw error.response?.data || { message: 'Registration failed' };
     }
@@ -45,14 +41,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      console.log('Attempting login to:', `${apiUrl}/auth/login`);
-      console.log('Email:', email);
-      const response = await axios.post(`${apiUrl}/auth/login`, { email, password });
-      console.log('Login response:', response.data);
-      setToken(response.data.token);
-      setUser(response.data.user);
-      localStorage.setItem('token', response.data.token);
-      return response.data;
+      console.log('Attempting login with email:', email);
+      const response = await authAPI.login({ email, password });
+      console.log('Login response:', response);
+      setToken(response.token);
+      setUser(response.user);
+      localStorage.setItem('token', response.token);
+      return response;
     } catch (error) {
       console.error('Login error:', error);
       console.error('Error response:', error.response?.data);
@@ -68,11 +63,9 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put(`${apiUrl}/auth/profile`, profileData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUser(response.data.user);
-      return response.data;
+      const response = await authAPI.updateProfile(profileData);
+      setUser(response.user);
+      return response;
     } catch (error) {
       throw error.response?.data || { message: 'Update failed' };
     }

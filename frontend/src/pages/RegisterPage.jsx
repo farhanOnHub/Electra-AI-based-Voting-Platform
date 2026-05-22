@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { User, Mail, Lock, Building2, Loader } from 'lucide-react';
 
 export const RegisterPage = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,7 +27,7 @@ export const RegisterPage = () => {
     e.preventDefault();
     
     if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(t('auth.passwordTooShort'));
       return;
     }
 
@@ -33,10 +35,10 @@ export const RegisterPage = () => {
 
     try {
       await register(formData);
-      toast.success('Registration successful!');
+      toast.success(t('auth.registerSuccess'));
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.message || 'Registration failed');
+      toast.error(error.message || t('auth.registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -48,9 +50,9 @@ export const RegisterPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-400 to-blue-500 bg-clip-text text-transparent mb-2">
-            Join Electra
+            {t('auth.joinElectra')}
           </h1>
-          <p className="text-dark-400">Create your account to get started</p>
+          <p className="text-dark-400">{t('auth.createAccount')}</p>
         </div>
 
         {/* Form Card */}
@@ -58,7 +60,7 @@ export const RegisterPage = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-medium mb-2">Full Name</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.name')}</label>
               <div className="relative">
                 <User className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
@@ -75,7 +77,7 @@ export const RegisterPage = () => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium mb-2">Email Address</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
@@ -92,7 +94,7 @@ export const RegisterPage = () => {
 
             {/* Organization */}
             <div>
-              <label className="block text-sm font-medium mb-2">College/Organization</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.organization')}</label>
               <div className="relative">
                 <Building2 className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
@@ -108,7 +110,7 @@ export const RegisterPage = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
@@ -121,20 +123,20 @@ export const RegisterPage = () => {
                   className="input-field pl-14"
                 />
               </div>
-              <p className="text-xs text-dark-400 mt-1">Minimum 6 characters</p>
+              <p className="text-xs text-dark-400 mt-1">{t('auth.minPassword')}</p>
             </div>
 
             {/* Role Selection */}
             <div>
-              <label className="block text-sm font-medium mb-2">I am a</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.iAmA')}</label>
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
                 className="input-field"
               >
-                <option value="user">Regular User</option>
-                <option value="admin">Event Organizer</option>
+                <option value="user">{t('auth.regularUser')}</option>
+                <option value="admin">{t('auth.eventOrganizer')}</option>
               </select>
             </div>
 
@@ -145,7 +147,7 @@ export const RegisterPage = () => {
               className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 mt-6"
             >
               {loading && <Loader size={20} className="animate-spin" />}
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? t('auth.creatingAccount') : t('auth.createAccountBtn')}
             </button>
           </form>
         </div>
@@ -153,9 +155,9 @@ export const RegisterPage = () => {
         {/* Login Link */}
         <div className="text-center">
           <p className="text-dark-400">
-            Already have an account?{' '}
+            {t('auth.hasAccount')}{' '}
             <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
-              Login here
+              {t('auth.loginHere')}
             </Link>
           </p>
         </div>

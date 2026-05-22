@@ -65,11 +65,33 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Check if account is locked (disabled for testing)
+    // if (user.failedLoginAttempts >= 5 && user.lastLoginAttempt > Date.now() - 15 * 60 * 1000) {
+    //   return res.status(429).json({ message: 'Account locked due to too many failed attempts. Please try again in 15 minutes.' });
+    // }
+
     const isPasswordMatch = await user.matchPassword(password);
     if (!isPasswordMatch) {
       console.log('Password mismatch for email:', email);
+      
+      // Increment failed login attempts (disabled for testing)
+      // user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      // user.lastLoginAttempt = new Date();
+      
+      // Lock account after 5 failed attempts (disabled for testing)
+      // if (user.failedLoginAttempts >= 5) {
+      //   await user.save();
+      //   return res.status(429).json({ message: 'Account locked due to too many failed attempts. Please try again in 15 minutes.' });
+      // }
+      
+      // await user.save();
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    // Reset failed login attempts on successful login (disabled for testing)
+    // user.failedLoginAttempts = 0;
+    // user.lastLoginAttempt = null;
+    // await user.save();
 
     const token = generateToken(user._id, user.role);
 
