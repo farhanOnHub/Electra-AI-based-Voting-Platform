@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import config from './src/config/index.js';
-import { connectDB } from './src/utils/database.js';
+import { connectDB, isDBConnected } from './src/utils/database.js';
 import { errorHandler, asyncHandler } from './src/middleware/errorHandler.js';
 import { initializeSocket } from './src/sockets/socketHandler.js';
 import { startEventScheduler } from './src/utils/scheduler.js';
@@ -21,6 +21,12 @@ import qrRoutes from './src/routes/qrRoutes.js';
 import aiRoutes from './src/routes/aiRoutes.js';
 import superAdminRoutes from './src/routes/superAdminRoutes.js';
 import mlRoutes from './src/routes/mlRoutes.js';
+import organizationRoutes from './src/routes/organizationRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js';
+import faceVerificationRoutes from './src/routes/faceVerificationRoutes.js';
+import otpRoutes from './src/routes/otpRoutes.js';
+import publicResultsRoutes from './src/routes/publicResultsRoutes.js';
+import auditRoutes from './src/routes/auditRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -71,6 +77,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check (before database check)
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    message: 'Server is healthy', 
+    timestamp: new Date(),
+    database: isDBConnected() ? 'connected' : 'not connected'
+  });
+});
+
+// Check database connection for API routes (after health check)
+app.use('/api', (req, res, next) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({
+      message: 'Database connection not available',
+      error: 'MongoDB is not running or not configured',
+      solution: 'Please install MongoDB and ensure it is running, or configure MONGO_URI in .env file'
+    });
+  }
+  next();
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
@@ -80,6 +107,14 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/ml', mlRoutes);
+app.use('/api/organization', organizationRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/face-verification', faceVerificationRoutes);
+app.use('/api/otp', otpRoutes);
+app.use('/api/public-results', publicResultsRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

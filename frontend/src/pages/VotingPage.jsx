@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { eventAPI, candidateAPI, voteAPI, faceVerificationAPI } from '../utils/api';
 import toast from 'react-hot-toast';
-import { CheckCircle, Users, Clock, Shield, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Users, Clock, Shield, AlertTriangle, ArrowLeft, AlertCircle } from 'lucide-react';
 
 export const VotingPage = () => {
   const { eventId } = useParams();
@@ -17,6 +17,7 @@ export const VotingPage = () => {
   const [loading, setLoading] = useState(true);
   const socketRef = useRef(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(null);
 
   useEffect(() => {
     if (!eventId) {
@@ -64,6 +65,29 @@ export const VotingPage = () => {
     };
   }, [eventId]);
 
+  // Countdown timer effect
+  useEffect(() => {
+    if (!event || !event.endTime) return;
+
+    const updateTimer = () => {
+      const now = new Date();
+      const endTime = new Date(event.endTime);
+      const remaining = endTime - now;
+
+      if (remaining <= 0) {
+        setTimeRemaining(0);
+        return;
+      }
+
+      setTimeRemaining(remaining);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [event]);
+
   const loadEventData = async () => {
     try {
       const eventResponse = await eventAPI.getEventById(eventId);
@@ -105,17 +129,28 @@ export const VotingPage = () => {
         candidateId: selectedCandidate._id,
         eventId
       });
-      
+
       toast.success('Vote cast successfully!');
       setHasVoted(true);
       setShowConfirmation(true);
-      
+
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to cast vote');
     }
+  };
+
+  const formatTimeRemaining = (milliseconds) => {
+    if (!milliseconds || milliseconds <= 0) return '00:00:00';
+
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   if (loading) {
@@ -173,9 +208,28 @@ export const VotingPage = () => {
           {event.banner && (
             <img src={event.banner} alt={event.title} className="w-full h-64 object-cover rounded-lg mb-6" />
           )}
-          
+
           <h1 className="text-4xl font-bold mb-4">{event.title}</h1>
           <p className="text-dark-300 mb-6">{event.description}</p>
+
+          {/* Countdown Timer - Displayed prominently when voting is active */}
+          {isActive && timeRemaining !== null && timeRemaining > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-r from-primary-500/20 to-primary-600/20 border-2 border-primary-500/50 rounded-xl p-6 mb-6"
+            >
+              <div className="flex items-center justify-center gap-4">
+                <Clock className="text-primary-400" size={32} />
+                <div className="text-center">
+                  <p className="text-primary-300 text-sm font-medium mb-1">Time Remaining</p>
+                  <p className="text-4xl font-bold text-white tracking-wider">
+                    {formatTimeRemaining(timeRemaining)}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>

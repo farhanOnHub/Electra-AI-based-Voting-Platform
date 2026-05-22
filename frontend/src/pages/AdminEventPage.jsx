@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { eventAPI, candidateAPI, publicResultsAPI, qrAPI, aiAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, QrCode, Share2, Download, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, QrCode, Share2, Download, Plus, Trash2, Upload, Calendar, Clock } from 'lucide-react';
 
 export const AdminEventPage = () => {
   const { eventId } = useParams();
@@ -161,6 +161,20 @@ export const AdminEventPage = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete candidate');
     }
+  };
+
+  const formatDateTimeDisplay = (dateTimeString) => {
+    if (!dateTimeString) return 'Not set';
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   if (loading) {
@@ -321,22 +335,42 @@ export const AdminEventPage = () => {
               required
             />
             <div className="grid md:grid-cols-2 gap-4">
-              <input
-                type="datetime-local"
-                name="startTime"
-                value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                className="input-field w-full"
-                required
-              />
-              <input
-                type="datetime-local"
-                name="endTime"
-                value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                className="input-field w-full"
-                required
-              />
+              <div>
+                <label className="block text-sm font-medium mb-2">Start Time</label>
+                <input
+                  type="datetime-local"
+                  name="startTime"
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  className="input-field w-full"
+                  required
+                />
+                {formData.startTime && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-primary-300">
+                    <Calendar size={14} />
+                    <Clock size={14} />
+                    {formatDateTimeDisplay(formData.startTime)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">End Time</label>
+                <input
+                  type="datetime-local"
+                  name="endTime"
+                  value={formData.endTime}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  className="input-field w-full"
+                  required
+                />
+                {formData.endTime && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-primary-300">
+                    <Calendar size={14} />
+                    <Clock size={14} />
+                    {formatDateTimeDisplay(formData.endTime)}
+                  </div>
+                )}
+              </div>
             </div>
             <input
               type="text"

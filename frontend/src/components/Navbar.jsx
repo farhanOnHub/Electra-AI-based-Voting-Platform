@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User, Home, Sun, Moon } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+import { Menu, X, LogOut, User, Home, Vote } from 'lucide-react';
 import { t, changeLanguage, getLanguage } from '../utils/i18nSimple';
 
 export const Navbar = () => {
@@ -15,39 +14,45 @@ export const Navbar = () => {
     navigate('/');
   };
 
-  const { theme, toggleTheme } = useTheme();
-
   return (
-    <nav className="glass-dark border-b border-white/10 sticky top-0 z-50">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary-400">
-            <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-blue-600 rounded-lg"></div>
+          <Link to="/" className="flex items-center gap-2 font-bold text-2xl text-gray-900">
+            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+              <Vote className="text-white" size={24} />
+            </div>
             Electra
           </Link>
 
-          {/* Desktop Menu */}
+          {/* Desktop Menu - Public */}
           <div className="hidden md:flex items-center gap-8">
             {!isAuthenticated ? (
               <>
-                <Link to="/login" className="text-white hover:text-primary-400 transition">{t('login')}</Link>
-                <Link to="/register" className="btn-primary">{t('register')}</Link>
+                <div className="flex items-center gap-4">
+                  <Link to="/login" className="px-6 py-2.5 border-2 border-green-500 text-green-600 rounded-full font-semibold hover:bg-green-50 transition">
+                    Log in
+                  </Link>
+                  <Link to="/register" className="px-6 py-2.5 bg-green-500 text-white rounded-full font-semibold hover:bg-green-600 transition">
+                    Register
+                  </Link>
+                </div>
               </>
             ) : (
               <>
-                <Link to="/dashboard" className="text-white hover:text-primary-400 transition flex items-center gap-2">
+                <Link to="/dashboard" className="text-gray-600 hover:text-green-600 transition flex items-center gap-2 font-medium">
                   <Home size={18} />
                   {t('dashboard')}
                 </Link>
-                <Link to="/notifications" className="text-white hover:text-primary-400 transition">
+                <Link to="/notifications" className="text-gray-600 hover:text-green-600 transition font-medium">
                   {t('notifications')}
                 </Link>
                 {user?.role === 'admin' && (
-                  <Link to="/admin" className="text-white hover:text-primary-400 transition">{t('adminPanel')}</Link>
+                  <Link to="/admin" className="text-gray-600 hover:text-green-600 transition font-medium">{t('adminPanel')}</Link>
                 )}
                 {user?.role === 'superAdmin' && (
-                  <Link to="/admin/super" className="text-white hover:text-primary-400 transition">{t('platformAdmin')}</Link>
+                  <Link to="/admin/super" className="text-gray-600 hover:text-green-600 transition font-medium">{t('platformAdmin')}</Link>
                 )}
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-3">
@@ -55,23 +60,19 @@ export const Navbar = () => {
                       aria-label="Language"
                       defaultValue={getLanguage()}
                       onChange={(e) => changeLanguage(e.target.value)}
-                      className="bg-transparent border border-white/10 text-white px-2 py-1 rounded"
+                      className="bg-transparent border border-gray-300 text-gray-700 px-2 py-1 rounded"
                     >
                       <option value="en">EN</option>
                       <option value="es">ES</option>
                     </select>
-
-                    <button onClick={toggleTheme} className="text-white">
-                      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
                   </div>
 
-                  <Link to="/profile" className="text-white hover:text-primary-400 transition">
+                  <Link to="/profile" className="text-gray-600 hover:text-green-600 transition">
                     <User size={20} />
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-white hover:text-red-400 transition"
+                    className="text-gray-600 hover:text-red-500 transition"
                   >
                     <LogOut size={20} />
                   </button>
@@ -82,7 +83,7 @@ export const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden"
+            className="md:hidden text-gray-700"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -91,40 +92,37 @@ export const Navbar = () => {
 
         {/* Mobile Menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-white/10 py-4 space-y-4">
+          <div className="md:hidden border-t border-gray-200 py-4 space-y-4 bg-white">
             <div className="flex items-center gap-3 px-2">
               <select
                 aria-label="Language"
                 defaultValue={localStorage.getItem('language') || 'en'}
                 onChange={(e) => changeLanguage(e.target.value)}
-                className="bg-transparent border border-white/10 text-white px-2 py-1 rounded"
+                className="bg-transparent border border-gray-300 text-gray-700 px-2 py-1 rounded"
               >
                 <option value="en">EN</option>
                 <option value="es">ES</option>
               </select>
-              <button onClick={toggleTheme} className="text-white">
-                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
             </div>
 
             {!isAuthenticated ? (
               <>
-                <Link to="/login" className="block text-white hover:text-primary-400">{t('login')}</Link>
-                <Link to="/register" className="block btn-primary text-center">{t('register')}</Link>
+                <Link to="/login" className="block text-gray-600 hover:text-green-600 px-2">Log in</Link>
+                <Link to="/register" className="block px-4 py-2 bg-green-500 text-white text-center rounded-full font-semibold">Register</Link>
               </>
             ) : (
               <>
-                <Link to="/dashboard" className="block text-white hover:text-primary-400">{t('dashboard')}</Link>
+                <Link to="/dashboard" className="block text-gray-600 hover:text-green-600 px-2">{t('dashboard')}</Link>
                 {user?.role === 'admin' && (
-                  <Link to="/admin" className="block text-white hover:text-primary-400">{t('adminPanel')}</Link>
+                  <Link to="/admin" className="block text-gray-600 hover:text-green-600 px-2">{t('adminPanel')}</Link>
                 )}
                 {user?.role === 'superAdmin' && (
-                  <Link to="/admin/super" className="block text-white hover:text-primary-400">{t('platformAdmin')}</Link>
+                  <Link to="/admin/super" className="block text-gray-600 hover:text-green-600 px-2">{t('platformAdmin')}</Link>
                 )}
-                <Link to="/profile" className="block text-white hover:text-primary-400">{t('profile')}</Link>
+                <Link to="/profile" className="block text-gray-600 hover:text-green-600 px-2">{t('profile')}</Link>
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left text-red-400 hover:text-red-300"
+                  className="block w-full text-left text-red-500 hover:text-red-600 px-2"
                 >
                   {t('logout')}
                 </button>

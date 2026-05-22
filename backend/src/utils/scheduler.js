@@ -1,5 +1,6 @@
 import Event from '../models/Event.js';
 import Vote from '../models/Vote.js';
+import mongoose from 'mongoose';
 
 const DEFAULT_INTERVAL_MS = 30 * 1000; // 30 seconds
 
@@ -8,6 +9,12 @@ export const startEventScheduler = (io, intervalMs = DEFAULT_INTERVAL_MS) => {
 
   const tick = async () => {
     try {
+      // Check if database is connected
+      if (mongoose.connection.readyState !== 1) {
+        // Database not connected, skip this tick
+        return;
+      }
+
       const now = new Date();
 
       // Activate upcoming events whose startTime <= now

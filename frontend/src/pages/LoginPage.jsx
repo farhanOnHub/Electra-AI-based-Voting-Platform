@@ -48,7 +48,7 @@ export const LoginPage = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 text-dark-400" size={20} />
+                <Mail className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
                   type="email"
                   name="email"
@@ -56,7 +56,7 @@ export const LoginPage = () => {
                   onChange={handleChange}
                   placeholder="your@email.com"
                   required
-                  className="input-field pl-10"
+                  className="input-field pl-14"
                 />
               </div>
             </div>
@@ -65,7 +65,7 @@ export const LoginPage = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-dark-400" size={20} />
+                <Lock className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
                   type="password"
                   name="password"
@@ -73,7 +73,7 @@ export const LoginPage = () => {
                   onChange={handleChange}
                   placeholder="••••••••"
                   required
-                  className="input-field pl-10"
+                  className="input-field pl-14"
                 />
               </div>
             </div>

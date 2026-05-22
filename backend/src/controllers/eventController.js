@@ -185,7 +185,7 @@ export const joinEvent = async (req, res) => {
       await event.save();
     }
 
-    if (!user.joinedEvents.includes(req.params.eventId)) {
+    if (!user.joinedEvents.includes(event._id)) {
       user.joinedEvents.push(event._id);
       await user.save();
     }

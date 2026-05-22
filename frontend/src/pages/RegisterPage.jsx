@@ -60,7 +60,7 @@ export const RegisterPage = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Full Name</label>
               <div className="relative">
-                <User className="absolute left-3 top-3 text-dark-400" size={20} />
+                <User className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
                   type="text"
                   name="name"
@@ -68,7 +68,7 @@ export const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="John Doe"
                   required
-                  className="input-field pl-10"
+                  className="input-field pl-14"
                 />
               </div>
             </div>
@@ -77,7 +77,7 @@ export const RegisterPage = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 text-dark-400" size={20} />
+                <Mail className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
                   type="email"
                   name="email"
@@ -85,7 +85,7 @@ export const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="your@email.com"
                   required
-                  className="input-field pl-10"
+                  className="input-field pl-14"
                 />
               </div>
             </div>
@@ -94,14 +94,14 @@ export const RegisterPage = () => {
             <div>
               <label className="block text-sm font-medium mb-2">College/Organization</label>
               <div className="relative">
-                <Building2 className="absolute left-3 top-3 text-dark-400" size={20} />
+                <Building2 className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
                   type="text"
                   name="organizationName"
                   value={formData.organizationName}
                   onChange={handleChange}
                   placeholder="Your organization"
-                  className="input-field pl-10"
+                  className="input-field pl-14"
                 />
               </div>
             </div>
@@ -110,7 +110,7 @@ export const RegisterPage = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-dark-400" size={20} />
+                <Lock className="absolute left-4 top-3 text-dark-400" size={20} />
                 <input
                   type="password"
                   name="password"
@@ -118,7 +118,7 @@ export const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="••••••••"
                   required
-                  className="input-field pl-10"
+                  className="input-field pl-14"
                 />
               </div>
               <p className="text-xs text-dark-400 mt-1">Minimum 6 characters</p>
