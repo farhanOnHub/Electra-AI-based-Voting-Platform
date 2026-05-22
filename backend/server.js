@@ -1,17 +1,18 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
 import config from './src/config/index.js';
 import { connectDB, isDBConnected } from './src/utils/database.js';
-import { errorHandler, asyncHandler } from './src/middleware/errorHandler.js';
+import { errorHandler } from './src/middleware/errorHandler.js';
 import { initializeSocket } from './src/sockets/socketHandler.js';
 import { startEventScheduler } from './src/utils/scheduler.js';
 
-// Import routes
+// Routes
 import authRoutes from './src/routes/authRoutes.js';
 import eventRoutes from './src/routes/eventRoutes.js';
 import candidateRoutes from './src/routes/candidateRoutes.js';
@@ -29,11 +30,15 @@ import otpRoutes from './src/routes/otpRoutes.js';
 import publicResultsRoutes from './src/routes/publicResultsRoutes.js';
 import auditRoutes from './src/routes/auditRoutes.js';
 
-// Initialize Express app
+// Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// App setup
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
+// Socket.IO
 const io = new SocketIOServer(server, {
   cors: {
     origin: config.clientUrl,
@@ -42,96 +47,51 @@ const io = new SocketIOServer(server, {
   }
 });
 
-// Connect to database
+// DB connect
 connectDB();
 
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-}));
+// Middlewares
+app.use(helmet());
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://192.168.1.60:3000', config.clientUrl],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    config.clientUrl
+  ],
   credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
-
-// Serve frontend static files in production
-if (config.nodeEnv === 'production') {
-  app.use(express.static('../frontend/dist'));
-  
-  // Handle SPA routing - serve index.html for all routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve('../frontend/dist', 'index.html'));
-  });
-}
-
-// Rate limiting (disabled for testing)
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100, // limit each IP to 100 requests per windowMs
-//   message: 'Too many requests from this IP, please try again later.',
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-
-// Stricter rate limiting for auth endpoints (disabled for testing)
-// const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 5, // limit each IP to 5 requests per windowMs for auth
-//   message: 'Too many authentication attempts, please try again later.',
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-
-// app.use('/api/', limiter);
-// app.use('/api/auth', authLimiter);
-
-// Initialize Socket.IO
+// Attach socket
 initializeSocket(io);
 
-// Start background scheduler for events
+// Scheduler
 startEventScheduler(io);
 
-// Make io accessible to routes
+// Make io available in routes
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
-// Health check (before database check)
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    message: 'Server is healthy', 
-    timestamp: new Date(),
-    database: isDBConnected() ? 'connected' : 'not connected'
+  res.json({
+    status: 'ok',
+    message: 'Server running',
+    database: isDBConnected() ? 'connected' : 'not connected',
+    timestamp: new Date()
   });
 });
 
-// Check database connection for API routes (after health check)
+// Block API if DB not connected
 app.use('/api', (req, res, next) => {
   if (!isDBConnected()) {
     return res.status(503).json({
-      message: 'Database connection not available',
-      error: 'MongoDB is not running or not configured',
-      solution: 'Please install MongoDB and ensure it is running, or configure MONGO_URI in .env file'
+      message: 'Database not connected'
     });
   }
   next();
@@ -155,10 +115,19 @@ app.use('/api/otp', otpRoutes);
 app.use('/api/public-results', publicResultsRoutes);
 app.use('/api/audit', auditRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ message: 'Server is healthy', timestamp: new Date() });
-});
+/* =========================
+   FRONTEND SERVE (FIXED)
+========================= */
+
+if (config.nodeEnv === 'production') {
+  const frontendPath = path.join(__dirname, '../frontend/dist');
+
+  app.use(express.static(frontendPath));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
 
 // 404 handler
 app.use((req, res) => {
@@ -168,20 +137,10 @@ app.use((req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Start server
-const PORT = config.port;
+// Start server (IMPORTANT for Render)
+const PORT = process.env.PORT || config.port || 5000;
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${config.nodeEnv}`);
 });
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
-  });
-});
-
-export default app;
