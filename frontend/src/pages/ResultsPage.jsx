@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { io } from 'socket.io-client';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { eventAPI, voteAPI } from '../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, TrendingUp, Award } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Award, Activity } from 'lucide-react';
 
 export const ResultsPage = () => {
   const { eventId } = useParams();
@@ -12,14 +13,45 @@ export const ResultsPage = () => {
   const [results, setResults] = useState(null);
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const socketRef = useRef(null);
 
   const COLORS = ['#0ea5e9', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   useEffect(() => {
     loadResults();
-    // Reload results every 2 seconds
-    const interval = setInterval(loadResults, 2000);
-    return () => clearInterval(interval);
+    // Initialize Socket.IO for real-time updates
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:5000');
+    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join_event', eventId);
+    });
+
+    socket.on('vote_update', (data) => {
+      if (data.eventId !== eventId) return;
+      // Update results in real-time
+      loadResults();
+      setLastUpdate(new Date());
+    });
+
+    socket.on('final_results', (payload) => {
+      if (payload.eventId !== eventId) return;
+      loadResults();
+      setLastUpdate(new Date());
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('leave_event', eventId);
+        socketRef.current.disconnect();
+      }
+    };
   }, [eventId]);
 
   const loadResults = async () => {
@@ -64,8 +96,18 @@ export const ResultsPage = () => {
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">{event?.title}</h1>
-          <p className="text-dark-300">Live Voting Results</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">{event?.title}</h1>
+              <p className="text-dark-300">Live Voting Results</p>
+            </div>
+            {lastUpdate && (
+              <div className="flex items-center gap-2 text-green-400">
+                <Activity size={16} className="animate-pulse" />
+                <span className="text-sm">Live</span>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* Summary Stats */}

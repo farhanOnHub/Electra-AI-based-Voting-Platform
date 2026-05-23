@@ -11,6 +11,7 @@ import { connectDB, isDBConnected } from './src/utils/database.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { initializeSocket } from './src/sockets/socketHandler.js';
 import { startEventScheduler } from './src/utils/scheduler.js';
+import adminRoutes from './src/routes/adminRoutes.js';
 
 // Routes
 import authRoutes from './src/routes/authRoutes.js';
@@ -114,6 +115,7 @@ app.use('/api/face-verification', faceVerificationRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/public-results', publicResultsRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/admin', adminRoutes);
 
 /* =========================
    FRONTEND SERVE (FIXED)
@@ -122,7 +124,11 @@ app.use('/api/audit', auditRoutes);
 if (config.nodeEnv === 'production') {
   const frontendPath = path.join(__dirname, '../frontend/dist');
 
-  app.use(express.static(frontendPath));
+  app.use(express.static(frontendPath, {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+  }));
 
   app.get('*', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
@@ -131,6 +137,7 @@ if (config.nodeEnv === 'production') {
 
 // 404 handler
 app.use((req, res) => {
+  console.log('404 - Route not found:', req.method, req.url);
   res.status(404).json({ message: 'Route not found' });
 });
 

@@ -109,6 +109,14 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Database indexes for performance optimization
+userSchema.index({ email: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ organizationId: 1 });
+userSchema.index({ createdAt: -1 });
+userSchema.index({ isEmailVerified: 1 });
+userSchema.index({ isBanned: 1 });
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

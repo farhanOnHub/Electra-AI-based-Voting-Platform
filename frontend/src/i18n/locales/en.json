@@ -143,5 +143,23 @@
     "events": "Events",
     "candidates": "Candidates",
     "results": "Results"
+  },
+  "landing": {
+    "tagline": "Your vote. Your voice. Your future.",
+    "heroTitle": "Secure Voting for a Better Tomorrow",
+    "heroSubtitle": "Simple, accessible, and transparent voting for organizations and communities.",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "joinOrganizations": "Join 2,000+ happy organizations",
+    "whyChoose": "Why Choose Electra?",
+    "whyChooseSubtitle": "Everything you need for secure and efficient voting",
+    "easyToUse": "Easy to Use",
+    "easyToUseDesc": "Simple for voters, powerful for admins.",
+    "transparent": "Transparent",
+    "transparentDesc": "Clear processes and verifiable results.",
+    "secure": "Secure",
+    "secureDesc": "Top-notch security at every step.",
+    "accessible": "Accessible",
+    "accessibleDesc": "For everyone, everywhere."
   }
 }

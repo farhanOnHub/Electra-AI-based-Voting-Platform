@@ -2,6 +2,7 @@ import Event from '../models/Event.js';
 import Candidate from '../models/Candidate.js';
 import User from '../models/User.js';
 import Vote from '../models/Vote.js';
+import { getCache, setCache, deleteCachePattern } from '../utils/cache.js';
 import crypto from 'crypto';
 
 const generateEventCode = () => {
@@ -36,6 +37,9 @@ export const createEvent = async (req, res) => {
 
     console.log('Event created with ID:', event._id);
 
+    // Invalidate events cache
+    await deleteCachePattern('events:*');
+
     res.status(201).json({
       message: 'Event created successfully',
       event
@@ -49,6 +53,16 @@ export const createEvent = async (req, res) => {
 export const getEvents = async (req, res) => {
   try {
     const { status, search } = req.query;
+
+    // Generate cache key
+    const cacheKey = `events:${status || 'all'}:${search || 'none'}`;
+
+    // Try to get from cache first
+    const cachedEvents = await getCache(cacheKey);
+    if (cachedEvents) {
+      console.log('Returning cached events');
+      return res.json({ events: cachedEvents });
+    }
 
     let filter = {};
     if (status) filter.status = status;
@@ -81,6 +95,9 @@ export const getEvents = async (req, res) => {
         _id: c._id.toString()
       }))
     }));
+
+    // Cache the results for 5 minutes
+    await setCache(cacheKey, eventsWithStrings, 300);
 
     res.json({ events: eventsWithStrings });
   } catch (error) {
@@ -198,22 +215,35 @@ export const joinEvent = async (req, res) => {
   try {
     const { eventCode } = req.body;
 
+    console.log('Join event attempt with code:', eventCode);
+    console.log('User ID:', req.userId);
+
     const event = await Event.findOne({ eventCode: eventCode.toUpperCase() });
     if (!event) {
+      console.log('Event not found with code:', eventCode.toUpperCase());
       return res.status(404).json({ message: 'Event not found' });
     }
 
+    console.log('Event found:', event._id, event.title);
+
     const user = await User.findById(req.userId);
+    console.log('User found:', user._id, user.name);
 
     // Check if already joined
     if (!event.participants.includes(req.userId)) {
       event.participants.push(req.userId);
       await event.save();
+      console.log('User added to event participants');
+    } else {
+      console.log('User already in event participants');
     }
 
     if (!user.joinedEvents.includes(event._id)) {
       user.joinedEvents.push(event._id);
       await user.save();
+      console.log('Event added to user joinedEvents');
+    } else {
+      console.log('Event already in user joinedEvents');
     }
 
     res.json({
@@ -221,6 +251,7 @@ export const joinEvent = async (req, res) => {
       event
     });
   } catch (error) {
+    console.error('Error joining event:', error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -149,7 +149,11 @@ export const VotingPage = () => {
         navigate('/dashboard');
       }, 2000);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to cast vote');
+      if (error.response?.data?.code === 'ACCOUNT_TOO_NEW') {
+        toast.error(error.response.data.message, { duration: 5000 });
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to cast vote');
+      }
     }
   };
 
@@ -220,7 +224,12 @@ export const VotingPage = () => {
           className="glass p-8 mb-8 rounded-2xl"
         >
           {event.banner && (
-            <img src={event.banner} alt={event.title} className="w-full h-64 object-cover rounded-lg mb-6" />
+            <img
+              src={event.banner.startsWith('http') ? event.banner : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${event.banner}`}
+              alt={event.title}
+              className="w-full h-64 object-cover rounded-lg mb-6"
+              loading="eager"
+            />
           )}
 
           <h1 className="text-4xl font-bold mb-4">{event.title}</h1>
@@ -261,6 +270,20 @@ export const VotingPage = () => {
               <p className="font-semibold text-primary-400">{event.participants?.length || 0}</p>
             </div>
           </div>
+          {event.maxVotes && (
+            <div className="mt-4 bg-white/5 p-4 rounded-xl">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-dark-400">Votes Remaining</p>
+                <p className="font-semibold text-primary-400">{event.maxVotes - event.totalVotes} / {event.maxVotes}</p>
+              </div>
+              <div className="w-full bg-dark-700 rounded-full h-2">
+                <div
+                  className="bg-primary-500 h-2 rounded-full transition-all"
+                  style={{ width: `${((event.totalVotes / event.maxVotes) * 100).toFixed(1)}%` }}
+                />
+              </div>
+            </div>
+          )}
           {faceStatus && (
             <div className="mt-6 grid md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white/5 p-4 rounded-xl">
@@ -366,6 +389,7 @@ export const VotingPage = () => {
                     src={candidate.image.startsWith('http') ? candidate.image : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${candidate.image}`}
                     alt={candidate.name}
                     className="w-full h-48 object-cover rounded-lg mb-4"
+                    loading="eager"
                   />
                 )}
                 

@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { EventProvider } from './context/EventContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
@@ -166,21 +167,23 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <EventProvider>
-        <AppContent />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#1f2937',
-              color: '#fff',
-              border: '1px solid rgba(14, 165, 233, 0.2)'
-            }
-          }}
-        />
-      </EventProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <EventProvider>
+          <AppContent />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: '#1f2937',
+                color: '#fff',
+                border: '1px solid rgba(14, 165, 233, 0.2)'
+              }
+            }}
+          />
+        </EventProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

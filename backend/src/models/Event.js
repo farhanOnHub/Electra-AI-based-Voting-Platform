@@ -87,6 +87,10 @@ const eventSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  maxVotes: {
+    type: Number,
+    default: null
+  },
   
   // Advanced Features
   allowChat: {
@@ -105,6 +109,14 @@ const eventSchema = new mongoose.Schema({
     default: Date.now
   }
 }, { timestamps: true });
+
+// Database indexes for performance optimization
+eventSchema.index({ organizer: 1 });
+eventSchema.index({ status: 1 });
+eventSchema.index({ startTime: 1, endTime: 1 });
+eventSchema.index({ createdAt: -1 });
+eventSchema.index({ isPublic: 1, status: 1 });
+eventSchema.index({ organizationId: 1 });
 
 const Event = mongoose.model('Event', eventSchema);
 

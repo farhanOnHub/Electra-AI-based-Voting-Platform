@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
+import { useTranslation } from 'react-i18next';
+import {
   Shield, Search, Smile, Users, ArrowRight, CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -13,6 +14,7 @@ const fadeIn = {
 };
 
 export const LandingPage = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
 
   const handleContactSubmit = (e) => {
@@ -24,23 +26,23 @@ export const LandingPage = () => {
   const features = [
     {
       icon: <Smile size={32} />,
-      title: 'Easy to Use',
-      description: 'Simple for voters, powerful for admins.'
+      title: t('landing.easyToUse'),
+      description: t('landing.easyToUseDesc')
     },
     {
       icon: <Search size={32} />,
-      title: 'Transparent',
-      description: 'Clear processes and verifiable results.'
+      title: t('landing.transparent'),
+      description: t('landing.transparentDesc')
     },
     {
       icon: <Shield size={32} />,
-      title: 'Secure',
-      description: 'Top-notch security at every step.'
+      title: t('landing.secure'),
+      description: t('landing.secureDesc')
     },
     {
       icon: <Users size={32} />,
-      title: 'Accessible',
-      description: 'For everyone, everywhere.'
+      title: t('landing.accessible'),
+      description: t('landing.accessibleDesc')
     }
   ];
 
@@ -59,17 +61,17 @@ export const LandingPage = () => {
               {/* Tagline */}
               <div className="flex items-center gap-2 mb-6">
                 <CheckCircle2 className="text-green-600" size={20} />
-                <span className="text-green-600 font-semibold text-sm">Your vote. Your voice. Your future.</span>
+                <span className="text-green-600 font-semibold text-sm">{t('landing.tagline')}</span>
               </div>
 
               {/* Main Heading */}
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight text-gray-900">
-                Secure Voting for a <span className="text-green-600">Better Tomorrow</span>
+                {t('landing.heroTitle')}
               </h1>
 
               {/* Subtext */}
               <p className="text-xl text-gray-600 mb-8 leading-relaxed max-w-lg">
-                Simple, accessible, and transparent voting for organizations and communities.
+                {t('landing.heroSubtitle')}
               </p>
 
               {/* CTA Buttons */}
@@ -80,7 +82,7 @@ export const LandingPage = () => {
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                   <Link to="/register" className="px-8 py-4 bg-green-500 text-white rounded-full font-bold hover:bg-green-600 transition flex items-center justify-center gap-2">
-                    Get Started
+                    {t('landing.getStarted')}
                     <motion.div
                       animate={{ x: [0, 5, 0] }}
                       transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
@@ -90,7 +92,7 @@ export const LandingPage = () => {
                   </Link>
                 </motion.div>
                 <a href="#features" className="px-8 py-4 border-2 border-green-500 text-green-600 rounded-full font-semibold hover:bg-green-50 transition text-center">
-                  Learn More
+                  {t('landing.learnMore')}
                 </a>
               </div>
 
@@ -106,7 +108,7 @@ export const LandingPage = () => {
                     </div>
                   ))}
                 </div>
-                <p className="text-gray-600 font-medium">Join 2,000+ happy organizations</p>
+                <p className="text-gray-600 font-medium">{t('landing.joinOrganizations')}</p>
               </div>
             </motion.div>
 
@@ -155,8 +157,8 @@ export const LandingPage = () => {
       <section id="features" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Why Choose Electra?</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Everything you need for secure and efficient voting</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">{t('landing.whyChoose')}</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">{t('landing.whyChooseSubtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">

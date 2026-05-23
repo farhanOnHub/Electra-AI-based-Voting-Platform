@@ -37,6 +37,11 @@ const candidateSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Database indexes for performance optimization
+candidateSchema.index({ eventId: 1 });
+candidateSchema.index({ voteCount: -1 });
+candidateSchema.index({ createdAt: -1 });
+
 const Candidate = mongoose.model('Candidate', candidateSchema);
 
 export default Candidate;

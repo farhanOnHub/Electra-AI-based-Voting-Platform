@@ -22,9 +22,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    console.error('API Error:', error);
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
+    }
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      console.error('Request timeout');
+    }
+    if (!error.response) {
+      console.error('Network error - server may be down');
     }
     return Promise.reject(error);
   }
@@ -203,6 +210,15 @@ export const superAdminAPI = {
 export const qrAPI = {
   generateEventQR: (eventId) => api.get(`/qr/event/${eventId}`),
   generateResultQR: (eventId) => api.get(`/qr/result/${eventId}`)
+};
+
+// Admin API
+export const adminAPI = {
+  getFraudAlerts: () => api.get('/admin/fraud-alerts'),
+  getAllUsers: (params) => api.get('/admin/users', { params }),
+  banUser: (userId, reason) => api.post(`/admin/users/${userId}/ban`, { reason }),
+  unbanUser: (userId) => api.post(`/admin/users/${userId}/unban`),
+  getAdminStats: () => api.get('/admin/stats'),
 };
 
 export default api;

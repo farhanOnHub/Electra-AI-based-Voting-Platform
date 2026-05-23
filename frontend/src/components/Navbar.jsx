@@ -90,24 +90,24 @@ export const Navbar = () => {
 
             {!isAuthenticated ? (
               <>
-                <Link to="/login" className="block text-gray-600 hover:text-green-600 px-2">Log in</Link>
-                <Link to="/register" className="block px-4 py-2 bg-green-500 text-white text-center rounded-full font-semibold">Register</Link>
+                <Link to="/login" className="block text-gray-600 hover:text-green-600 px-2">{t('auth.login')}</Link>
+                <Link to="/register" className="block px-4 py-2 bg-green-500 text-white text-center rounded-full font-semibold">{t('auth.register')}</Link>
               </>
             ) : (
               <>
-                <Link to="/dashboard" className="block text-gray-600 hover:text-green-600 px-2">Dashboard</Link>
+                <Link to="/dashboard" className="block text-gray-600 hover:text-green-600 px-2">{t('navigation.dashboard')}</Link>
                 {user?.role === 'admin' && (
-                  <Link to="/admin" className="block text-gray-600 hover:text-green-600 px-2">Admin Panel</Link>
+                  <Link to="/admin" className="block text-gray-600 hover:text-green-600 px-2">{t('navigation.adminPanel')}</Link>
                 )}
                 {user?.role === 'superAdmin' && (
-                  <Link to="/admin/super" className="block text-gray-600 hover:text-green-600 px-2">Platform Admin</Link>
+                  <Link to="/admin/super" className="block text-gray-600 hover:text-green-600 px-2">{t('navigation.platformAdmin')}</Link>
                 )}
-                <Link to="/profile" className="block text-gray-600 hover:text-green-600 px-2">Profile</Link>
+                <Link to="/profile" className="block text-gray-600 hover:text-green-600 px-2">{t('navigation.profile')}</Link>
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left text-red-500 hover:text-red-600 px-2"
                 >
-                  Logout
+                  {t('auth.logout')}
                 </button>
               </>
             )}

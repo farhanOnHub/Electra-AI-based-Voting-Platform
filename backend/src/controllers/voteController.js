@@ -2,16 +2,26 @@ import Vote from '../models/Vote.js';
 import Event from '../models/Event.js';
 import Candidate from '../models/Candidate.js';
 import User from '../models/User.js';
+import { generateDeviceFingerprint, generateVoteHash, isAccountOldEnough, detectSuspiciousActivity } from '../utils/deviceFingerprint.js';
 
 export const castVote = async (req, res) => {
   try {
     const { candidateId, eventId } = req.body;
     const userId = req.userId;
 
-    // Check if user has already voted in this event
-    const existingVote = await Vote.findOne({ userId, eventId });
-    if (existingVote) {
-      return res.status(400).json({ message: 'You have already voted in this event' });
+    // Get user details for security checks
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Account age restriction - prevent instant fake accounts
+    if (!isAccountOldEnough(user.createdAt, 10)) {
+      const remainingMinutes = Math.ceil((10 * 60 * 1000 - (Date.now() - new Date(user.createdAt).getTime())) / (60 * 1000));
+      return res.status(403).json({
+        message: `Account must be at least 10 minutes old before voting. Please wait ${remainingMinutes} more minutes.`,
+        code: 'ACCOUNT_TOO_NEW'
+      });
     }
 
     // Verify event exists and is active
@@ -19,6 +29,28 @@ export const castVote = async (req, res) => {
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
+
+    // Check if maxVotes is set and reached
+    if (event.maxVotes && event.totalVotes >= event.maxVotes) {
+      return res.status(400).json({ message: 'Maximum votes reached for this event' });
+    }
+
+    // Check if user has already voted in this event
+    const existingVote = await Vote.findOne({ userId, eventId });
+    if (existingVote) {
+      return res.status(400).json({ message: 'You have already voted in this event' });
+    }
+
+    // Generate device fingerprint and security data
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    const deviceId = generateDeviceFingerprint(req);
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const timestamp = Date.now();
+    const voteHash = generateVoteHash(userId, candidateId, eventId, timestamp);
+
+    // Detect suspicious activity
+    const suspiciousPatterns = await detectSuspiciousActivity(Vote, eventId, ipAddress, deviceId);
+    const isSuspicious = suspiciousPatterns.length > 0;
 
     const now = new Date();
     if (now < new Date(event.startTime) || now > new Date(event.endTime)) {
@@ -31,11 +63,17 @@ export const castVote = async (req, res) => {
       return res.status(404).json({ message: 'Candidate not found' });
     }
 
-    // Create vote
+    // Create vote with security tracking
     const vote = new Vote({
       userId,
       candidateId,
-      eventId
+      eventId,
+      ipAddress,
+      deviceId,
+      userAgent,
+      voteHash,
+      isSuspicious,
+      suspicionReason: isSuspicious ? suspiciousPatterns.join(', ') : null
     });
 
     await vote.save();
@@ -52,7 +90,6 @@ export const castVote = async (req, res) => {
     await event.save();
 
     // Add to user's votedEvents
-    const user = await User.findById(userId);
     if (!user.votedEvents.includes(eventId)) {
       user.votedEvents.push(eventId);
       await user.save();
