@@ -10,6 +10,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
     "axios": "^1.6.2",
     "framer-motion": "^10.16.5",
     "i18next": "^23.16.8",
@@ -28,7 +29,6 @@
     "zustand": "^4.4.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
     "terser": "^5.48.0"
