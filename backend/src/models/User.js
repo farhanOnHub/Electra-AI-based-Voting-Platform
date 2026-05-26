@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: Date,
   
   // Face Verification
-  faceVerificationImage: String, // Encrypted hash of face
+  faceVerificationImage: [Number], // Face descriptor array (128-dimensional)
   faceVerified: {
     type: Boolean,
     default: false

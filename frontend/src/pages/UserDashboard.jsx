@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventAPI, voteAPI } from '../utils/api';
 import toast from 'react-hot-toast';
-import { Calendar, Users, CheckCircle, Lock, Search, Plus, Code } from 'lucide-react';
+import { Calendar, Users, CheckCircle, Lock, Search, Plus, Code, BarChart3 } from 'lucide-react';
 
 export const UserDashboard = () => {
   const { user } = useAuth();
@@ -114,9 +114,25 @@ export const UserDashboard = () => {
           </button>
         )}
 
-        {status !== 'Active' && (
+        {status === 'Completed' && (
+          <button
+            onClick={() => {
+              if (!event._id) {
+                toast.error('Invalid event ID');
+                return;
+              }
+              navigate(`/results/${event._id}`);
+            }}
+            className="btn-primary w-full flex items-center justify-center gap-2"
+          >
+            <BarChart3 size={18} />
+            View Results
+          </button>
+        )}
+
+        {status === 'Upcoming' && (
           <button className="btn-secondary w-full opacity-50 cursor-not-allowed">
-            {status === 'Upcoming' ? 'Vote When Active' : 'Voting Closed'}
+            Vote When Active
           </button>
         )}
       </motion.div>

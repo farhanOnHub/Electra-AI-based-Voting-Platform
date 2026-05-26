@@ -1,41 +1,35 @@
 import User from '../models/User.js';
 import crypto from 'crypto';
 
-// Simulate face detection/verification with image processing
-const processFaceImage = (imageData) => {
-  // In production, use face-api.js or a real biometrics service
-  // For now, create a hash of the image so we can compare captures
-  const hash = crypto.createHash('sha256').update(imageData).digest('hex');
-  return hash;
+// Real face verification using face-api.js descriptors
+const calculateEuclideanDistance = (descriptor1, descriptor2) => {
+  if (!descriptor1 || !descriptor2 || descriptor1.length !== descriptor2.length) {
+    return 1.0; // Maximum distance (no match)
+  }
+
+  let sum = 0;
+  for (let i = 0; i < descriptor1.length; i++) {
+    const diff = descriptor1[i] - descriptor2[i];
+    sum += diff * diff;
+  }
+
+  return Math.sqrt(sum);
 };
 
-const calculateLivenessScore = (imageData) => {
-  const normalized = imageData.replace(/^data:image\/\w+;base64,/, '');
-  const length = normalized.length;
-  let score = Math.min(95, Math.max(35, (length / 20000) * 100));
-
-  if (/png|jpeg|jpg/.test(imageData)) {
-    score += 5;
-  }
-
-  if (imageData.includes('data:image') && length > 25000) {
-    score += 5;
-  }
-
-  return Math.min(100, Math.round(score));
-};
-
-const compareFaceHashes = (hash1, hash2) => {
-  if (!hash1 || !hash2) return 0;
-  const minLength = Math.min(hash1.length, hash2.length);
-  let differences = 0;
-
-  for (let i = 0; i < minLength; i++) {
-    if (hash1[i] !== hash2[i]) differences += 1;
-  }
-
-  const similarity = 100 - (differences / minLength) * 100;
-  return Number(Math.max(0, Math.min(100, similarity)).toFixed(2));
+const calculateIdentityConfidence = (distance) => {
+  // face-api.js typically uses 0.6 as threshold for same person
+  // Distance < 0.4: very confident match
+  // Distance 0.4-0.6: confident match
+  // Distance > 0.6: different person
+  const threshold = 0.6;
+  const maxDistance = 1.0;
+  
+  if (distance >= maxDistance) return 0;
+  if (distance <= 0.3) return 100;
+  
+  // Linear interpolation between 0.3 and 0.6
+  const confidence = 100 - ((distance - 0.3) / (threshold - 0.3)) * 100;
+  return Math.max(0, Math.min(100, confidence));
 };
 
 const detectBiometricAnomaly = (livenessScore, identityConfidence) => {
@@ -44,25 +38,32 @@ const detectBiometricAnomaly = (livenessScore, identityConfidence) => {
 
 export const captureFaceImage = async (req, res) => {
   try {
-    const { imageData } = req.body;
+    const { imageData, faceDescriptor, livenessScore: frontendLivenessScore } = req.body;
     const userId = req.userId;
 
     if (!imageData) {
       return res.status(400).json({ message: 'Image data required' });
     }
 
-    const faceHash = processFaceImage(imageData);
-    const livenessScore = calculateLivenessScore(imageData);
+    if (!faceDescriptor) {
+      return res.status(400).json({ message: 'Face descriptor required. Please ensure face detection is working.' });
+    }
 
     const user = await User.findById(userId);
-    const previousHash = user?.faceVerificationImage;
-    const identityConfidence = previousHash
-      ? compareFaceHashes(previousHash, faceHash)
-      : 100;
+    const previousDescriptor = user?.faceVerificationImage;
+    
+    let identityConfidence = 100;
+    let livenessScore = frontendLivenessScore || 75;
+
+    if (previousDescriptor) {
+      // Compare face descriptors using Euclidean distance
+      const distance = calculateEuclideanDistance(previousDescriptor, faceDescriptor);
+      identityConfidence = calculateIdentityConfidence(distance);
+    }
 
     const biometricAnomaly = detectBiometricAnomaly(livenessScore, identityConfidence);
 
-    if (previousHash && identityConfidence < 70) {
+    if (previousDescriptor && identityConfidence < 70) {
       return res.status(400).json({
         message: 'Face does not match your enrolled profile. Please try again with a live selfie.',
         identityConfidence,
@@ -74,7 +75,7 @@ export const captureFaceImage = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
-        faceVerificationImage: faceHash,
+        faceVerificationImage: faceDescriptor,
         faceVerified: true,
         faceVerificationDate: new Date(),
         faceLivenessScore: livenessScore,
@@ -99,11 +100,15 @@ export const captureFaceImage = async (req, res) => {
 
 export const verifyFaceBeforeVote = async (req, res) => {
   try {
-    const { imageData } = req.body;
+    const { imageData, faceDescriptor, livenessScore: frontendLivenessScore } = req.body;
     const userId = req.userId;
 
     if (!imageData) {
       return res.status(400).json({ message: 'Image data required' });
+    }
+
+    if (!faceDescriptor) {
+      return res.status(400).json({ message: 'Face descriptor required. Please ensure face detection is working.' });
     }
 
     const user = await User.findById(userId);
@@ -115,25 +120,26 @@ export const verifyFaceBeforeVote = async (req, res) => {
       });
     }
 
-    const newFaceHash = processFaceImage(imageData);
-    const currentConfidence = compareFaceHashes(user.faceVerificationImage, newFaceHash);
-    const livenessScore = calculateLivenessScore(imageData);
-    const biometricAnomaly = detectBiometricAnomaly(livenessScore, currentConfidence);
+    // Compare face descriptors using Euclidean distance
+    const distance = calculateEuclideanDistance(user.faceVerificationImage, faceDescriptor);
+    const identityConfidence = calculateIdentityConfidence(distance);
+    const livenessScore = frontendLivenessScore || 75;
+    const biometricAnomaly = detectBiometricAnomaly(livenessScore, identityConfidence);
 
-    const verified = currentConfidence >= 70 && livenessScore >= 55;
+    const verified = identityConfidence >= 70 && livenessScore >= 55;
 
     if (!verified) {
       return res.status(400).json({
         message: 'Face verification failed. Please try again with a live selfie.',
         verified: false,
-        identityConfidence: currentConfidence,
+        identityConfidence,
         livenessScore,
         biometricAnomaly
       });
     }
 
     await User.findByIdAndUpdate(userId, {
-      identityConfidence: currentConfidence,
+      identityConfidence,
       faceLivenessScore: livenessScore,
       biometricAnomaly,
       lastFaceVerificationAttempt: new Date()
@@ -142,7 +148,7 @@ export const verifyFaceBeforeVote = async (req, res) => {
     res.json({
       message: 'Face verified successfully',
       verified: true,
-      identityConfidence: currentConfidence,
+      identityConfidence,
       livenessScore,
       biometricAnomaly
     });

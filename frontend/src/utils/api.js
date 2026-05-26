@@ -82,6 +82,7 @@ export const eventAPI = {
   joinEvent: (code) => api.post('/events/join', { eventCode: code }),
   getUserEvents: () => api.get('/events/user/events'),
   getEventResults: (eventId) => api.get(`/events/${eventId}/results`),
+  toggleResultsVisibility: (eventId) => api.patch(`/events/${eventId}/toggle-results`),
   getAdminAnalytics: () => api.get('/events/admin/analytics')
 };
 

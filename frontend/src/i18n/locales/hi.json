@@ -97,7 +97,12 @@
     "confirmDelete": "क्या आप वाकई इस इवेंट को हटाना चाहते हैं?",
     "createFailed": "इवेंट बनाने में विफल",
     "deleteFailed": "इवेंट हटाने में विफल",
-    "createEventBtn": "इवेंट बनाएं"
+    "createEventBtn": "इवेंट बनाएं",
+    "resultsVisible": "परिणाम दृश्यमान",
+    "resultsNotVisible": "परिणाम दृश्यमान नहीं",
+    "showResults": "परिणाम दिखाएं",
+    "hideResults": "परिणाम छिपाएं",
+    "resultsNotYetVisible": "परिणाम अभी दृश्यमान नहीं हैं"
   },
   "candidate": {
     "name": "उम्मीदवार का नाम",

@@ -60,6 +60,7 @@ router.delete('/:id', authenticate, authorize('admin'), eventController.deleteEv
 router.post('/join', authenticate, eventController.joinEvent);
 router.get('/user/events', authenticate, eventController.getUserEvents);
 router.get('/:eventId/results', eventController.getEventResults);
+router.patch('/:eventId/toggle-results', authenticate, authorize('admin'), eventController.toggleResultsVisibility);
 router.get('/admin/analytics', authenticate, authorize('admin'), eventController.getAdminAnalytics);
 
 export default router;

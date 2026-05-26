@@ -11,10 +11,8 @@ const generateEventCode = () => {
 
 export const createEvent = async (req, res) => {
   try {
-    const { title, description, startTime, endTime, position, bio } = req.body;
+    const { title, description, startTime, endTime, position, bio, organizerName } = req.body;
     const banner = req.file ? `/uploads/events/${req.file.filename}` : req.body.banner;
-
-    console.log('Creating event with data:', { title, description, startTime, endTime, position, bio });
 
     const event = new Event({
       title,
@@ -25,20 +23,12 @@ export const createEvent = async (req, res) => {
       position,
       bio,
       organizer: req.userId,
+      organizerName: organizerName || 'Organizer',
       eventCode: generateEventCode(),
       status: 'upcoming'
     });
 
-    // Get organizer name
-    const organizer = await User.findById(req.userId);
-    event.organizerName = organizer.name;
-
     await event.save();
-
-    console.log('Event created with ID:', event._id);
-
-    // Invalidate events cache
-    await deleteCachePattern('events:*');
 
     res.status(201).json({
       message: 'Event created successfully',
@@ -189,20 +179,20 @@ export const deleteEvent = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized - only event organizers and admins can delete events' });
     }
 
-    // Delete event and all related data
-    await Event.findByIdAndDelete(req.params.id);
-    await Candidate.deleteMany({ eventId: req.params.id });
-    await Vote.deleteMany({ eventId: req.params.id });
-
-    // Remove event from users' joinedEvents and votedEvents
-    await User.updateMany(
-      { joinedEvents: req.params.id },
-      { $pull: { joinedEvents: req.params.id } }
-    );
-    await User.updateMany(
-      { votedEvents: req.params.id },
-      { $pull: { votedEvents: req.params.id } }
-    );
+    // Delete event and all related data in parallel
+    await Promise.all([
+      Event.findByIdAndDelete(req.params.id),
+      Candidate.deleteMany({ eventId: req.params.id }),
+      Vote.deleteMany({ eventId: req.params.id }),
+      User.updateMany(
+        { joinedEvents: req.params.id },
+        { $pull: { joinedEvents: req.params.id } }
+      ),
+      User.updateMany(
+        { votedEvents: req.params.id },
+        { $pull: { votedEvents: req.params.id } }
+      )
+    ]);
 
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {
@@ -293,6 +283,15 @@ export const getEventResults = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
+    // Check if results are visible (unless user is the organizer/admin)
+    const user = await User.findById(req.userId);
+    const isAdmin = user?.role === 'admin' || user?.role === 'superAdmin';
+    const isOrganizer = event.organizer.toString() === req.userId;
+
+    if (!event.isResultsVisible && !isAdmin && !isOrganizer) {
+      return res.status(403).json({ message: 'Results are not yet visible' });
+    }
+
     const votes = await Vote.find({ eventId }).populate('candidateId');
 
     const results = {};
@@ -309,6 +308,32 @@ export const getEventResults = async (req, res) => {
       event,
       results,
       totalVotes: event.totalVotes
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const toggleResultsVisibility = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Check authorization
+    if (event.organizer.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    event.isResultsVisible = !event.isResultsVisible;
+    await event.save();
+
+    res.json({
+      message: `Results ${event.isResultsVisible ? 'made visible' : 'hidden'}`,
+      isResultsVisible: event.isResultsVisible
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -1,16 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { faceVerificationAPI } from '../utils/api';
 import toast from 'react-hot-toast';
-import { Camera, CheckCircle, Shield, ArrowLeft, Loader } from 'lucide-react';
+import { Camera, CheckCircle, Shield, ArrowLeft, Loader, AlertTriangle } from 'lucide-react';
+import * as faceapi from 'face-api.js';
 
 export const FaceVerificationPage = () => {
+  const { eventId } = useParams();
   const [imageData, setImageData] = useState('');
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [livenessDetected, setLivenessDetected] = useState(false);
+  const [faceDescriptor, setFaceDescriptor] = useState(null);
   const navigate = useNavigate();
+  const imgRef = useRef(null);
 
   useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
+        ]);
+        setModelsLoaded(true);
+        toast.success('Face detection models loaded');
+      } catch (error) {
+        console.error('Error loading face-api models:', error);
+        toast.error('Failed to load face detection models');
+      }
+    };
+
     const loadStatus = async () => {
       try {
         const response = await faceVerificationAPI.checkFaceVerification();
@@ -19,6 +43,8 @@ export const FaceVerificationPage = () => {
         console.error(error);
       }
     };
+
+    loadModels();
     loadStatus();
   }, []);
 
@@ -27,10 +53,48 @@ export const FaceVerificationPage = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       setImageData(reader.result);
+      setFaceDetected(false);
+      setFaceDescriptor(null);
+
+      // Detect face after image loads
+      if (modelsLoaded) {
+        await detectFace(reader.result);
+      }
     };
     reader.readAsDataURL(file);
+  };
+
+  const detectFace = async (imageSrc) => {
+    try {
+      const img = await faceapi.fetchImage(imageSrc);
+      const detections = await faceapi
+        .detectSingleFace(img)
+        .withFaceLandmarks()
+        .withFaceDescriptor()
+        .withFaceExpressions();
+
+      if (detections) {
+        setFaceDetected(true);
+        setFaceDescriptor(Array.from(detections.descriptor));
+        
+        // Simple liveness detection using expressions
+        const expressions = detections.expressions;
+        const isNeutral = expressions.neutral > 0.5;
+        const hasExpression = Object.values(expressions).some(e => e > 0.3);
+        setLivenessDetected(hasExpression);
+        
+        toast.success('Face detected successfully');
+      } else {
+        setFaceDetected(false);
+        setFaceDescriptor(null);
+        toast.error('No face detected in image. Please use a clear photo with your face visible.');
+      }
+    } catch (error) {
+      console.error('Face detection error:', error);
+      toast.error('Failed to detect face');
+    }
   };
 
   const handleCapture = async () => {
@@ -39,9 +103,23 @@ export const FaceVerificationPage = () => {
       return;
     }
 
+    if (!faceDetected) {
+      toast.error('No face detected. Please use a clear photo with your face visible.');
+      return;
+    }
+
+    if (!faceDescriptor) {
+      toast.error('Face descriptor not extracted. Please try again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await faceVerificationAPI.captureFaceImage({ imageData });
+      const response = await faceVerificationAPI.captureFaceImage({
+        imageData,
+        faceDescriptor,
+        livenessScore: livenessDetected ? 85 : 50
+      });
       toast.success(response.message || 'Face verified successfully');
       setStatus({
         faceVerified: true,
@@ -50,8 +128,15 @@ export const FaceVerificationPage = () => {
         biometricAnomaly: response.biometricAnomaly,
         lastAttempt: new Date().toISOString()
       });
+      
+      // Navigate back to voting page after successful verification
+      if (eventId) {
+        setTimeout(() => {
+          navigate(`/voting/${eventId}?verified=true`);
+        }, 1500);
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Face capture failed');
+      toast.error(error.response?.data?.message || 'Face verification failed');
     } finally {
       setLoading(false);
     }
@@ -118,14 +203,46 @@ export const FaceVerificationPage = () => {
               <div className="glass p-6 rounded-xl">
                 <h2 className="text-xl font-semibold mb-3">Upload Your Photo</h2>
                 <p className="text-dark-400 mb-4">Use a clear, well-lit selfie for best results.</p>
-                <input type="file" accept="image/*" onChange={handleFileChange} className="input-field" />
+                
+                {!modelsLoaded && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-2 text-yellow-300">
+                      <Loader size={18} className="animate-spin" />
+                      <span className="text-sm">Loading face detection models...</span>
+                    </div>
+                  </div>
+                )}
+
+                <input type="file" accept="image/*" onChange={handleFileChange} className="input-field" disabled={!modelsLoaded} />
                 {imageData && (
-                  <img src={imageData} alt="Preview" className="w-full h-64 object-cover rounded-xl mt-4" />
+                  <div className="mt-4">
+                    <img src={imageData} alt="Preview" className="w-full h-64 object-cover rounded-xl" />
+                    <div className="mt-3 space-y-2">
+                      {faceDetected && (
+                        <div className="flex items-center gap-2 text-green-400 text-sm">
+                          <CheckCircle size={16} />
+                          <span>Face detected successfully</span>
+                        </div>
+                      )}
+                      {!faceDetected && imageData && (
+                        <div className="flex items-center gap-2 text-red-400 text-sm">
+                          <AlertTriangle size={16} />
+                          <span>No face detected - please use a clear photo</span>
+                        </div>
+                      )}
+                      {livenessDetected && (
+                        <div className="flex items-center gap-2 text-green-400 text-sm">
+                          <CheckCircle size={16} />
+                          <span>Liveness detected</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
                 <button
                   onClick={handleCapture}
-                  disabled={loading}
-                  className="btn-primary w-full mt-6 flex items-center justify-center gap-2 disabled:opacity-50"
+                  disabled={loading || !faceDetected || !modelsLoaded}
+                  className="btn-primary w-full mt-6 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? <Loader size={18} className="animate-spin" /> : <Camera size={18} />}
                   {status?.faceVerified ? 'Re-capture Face' : 'Capture Face'}
@@ -141,14 +258,6 @@ export const FaceVerificationPage = () => {
                 <li>• Strengthens trust for high-stakes elections.</li>
                 <li>• Works with our secure voting workflow.</li>
               </ul>
-
-              <button
-                onClick={handleDisable}
-                disabled={loading}
-                className="btn-secondary w-full mt-8"
-              >
-                Disable Verification
-              </button>
             </div>
           </div>
         </div>

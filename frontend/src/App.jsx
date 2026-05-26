@@ -75,6 +75,14 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/face-verification/:eventId"
+              element={
+                <ProtectedRoute>
+                  <FaceVerificationPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Protected Routes */}
             <Route

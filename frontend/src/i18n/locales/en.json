@@ -97,7 +97,12 @@
     "confirmDelete": "Are you sure you want to delete this event?",
     "createFailed": "Failed to create event",
     "deleteFailed": "Failed to delete event",
-    "createEventBtn": "Create Event"
+    "createEventBtn": "Create Event",
+    "resultsVisible": "Results Visible",
+    "resultsNotVisible": "Results Not Visible",
+    "showResults": "Show Results",
+    "hideResults": "Hide Results",
+    "resultsNotYetVisible": "Results are not yet visible"
   },
   "candidate": {
     "name": "Candidate Name",

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { eventAPI, voteAPI, candidateAPI, adminAPI } from '../utils/api';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Users, CheckCircle, TrendingUp, BarChart3, Upload, UserPlus, AlertTriangle, Shield, UserX, Activity } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, CheckCircle, TrendingUp, BarChart3, Upload, UserPlus, AlertTriangle, Shield, UserX, Activity, Eye, EyeOff } from 'lucide-react';
 
 export const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -73,6 +73,7 @@ export const AdminDashboard = () => {
     try {
       await eventAPI.createEvent({
         ...formData,
+        organizerName: 'Admin',
         status: 'upcoming'
       });
       toast.success(t('event.eventCreated'));
@@ -90,6 +91,16 @@ export const AdminDashboard = () => {
     if (file) {
       setFormData({ ...formData, banner: file });
       setBannerPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleToggleResultsVisibility = async (eventId) => {
+    try {
+      const response = await eventAPI.toggleResultsVisibility(eventId);
+      toast.success(response.message);
+      loadAdminData();
+    } catch (error) {
+      toast.error('Failed to toggle results visibility');
     }
   };
 
@@ -485,6 +496,13 @@ export const AdminDashboard = () => {
                       title="Add Candidate"
                     >
                       <UserPlus size={20} className="text-green-400" />
+                    </button>
+                    <button
+                      onClick={() => handleToggleResultsVisibility(event._id)}
+                      className="p-2 hover:bg-blue-500/20 rounded-lg transition"
+                      title={event.isResultsVisible ? 'Hide Results' : 'Show Results'}
+                    >
+                      {event.isResultsVisible ? <EyeOff size={20} className="text-blue-400" /> : <Eye size={20} className="text-blue-400" />}
                     </button>
                     <button
                       onClick={() => window.location.href = `/admin/event/${event._id}`}

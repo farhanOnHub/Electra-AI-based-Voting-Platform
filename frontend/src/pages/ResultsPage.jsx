@@ -60,7 +60,11 @@ export const ResultsPage = () => {
       setResults(resultsData.results);
       setEvent(resultsData.event);
     } catch (error) {
-      toast.error('Failed to load results');
+      if (error.response?.status === 403) {
+        toast.error(error.response?.data?.message || 'Results are not yet visible');
+      } else {
+        toast.error('Failed to load results');
+      }
     } finally {
       setLoading(false);
     }

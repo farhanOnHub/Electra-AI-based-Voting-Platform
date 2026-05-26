@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { eventAPI, candidateAPI, publicResultsAPI, qrAPI, aiAPI } from '../utils/api';
+import { eventAPI, candidateAPI, publicResultsAPI, qrAPI, aiAPI, voteAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, QrCode, Share2, Download, Plus, Trash2, Upload, Calendar, Clock } from 'lucide-react';
+import { io } from 'socket.io-client';
+import { ArrowLeft, Save, QrCode, Share2, Download, Plus, Trash2, Upload, Calendar, Clock, Activity, Users, TrendingUp } from 'lucide-react';
 
 export const AdminEventPage = () => {
   const { eventId } = useParams();
@@ -21,6 +22,9 @@ export const AdminEventPage = () => {
   const [candidateForm, setCandidateForm] = useState({ name: '', bio: '', position: '', image: null });
   const [candidateImagePreview, setCandidateImagePreview] = useState(null);
   const [showCandidateForm, setShowCandidateForm] = useState(false);
+  const [liveStats, setLiveStats] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const socketRef = useRef(null);
 
   const loadEvent = async () => {
     try {
@@ -61,13 +65,50 @@ export const AdminEventPage = () => {
     }
   };
 
+  const loadLiveStats = async () => {
+    try {
+      const response = await voteAPI.getEventResults(eventId);
+      setLiveStats(response);
+      setLastUpdate(new Date());
+    } catch (error) {
+      console.error('Error loading live stats:', error);
+    }
+  };
+
   useEffect(() => {
     const initialize = async () => {
       await loadEvent();
       await loadAiAnalysis(eventId);
+      await loadLiveStats();
     };
 
     initialize();
+
+    // Initialize Socket.IO for real-time updates
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:5000');
+    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join_event', eventId);
+    });
+
+    socket.on('vote_update', (data) => {
+      if (data.eventId !== eventId) return;
+      loadLiveStats();
+      setLastUpdate(new Date());
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('leave_event', eventId);
+        socketRef.current.disconnect();
+      }
+    };
   }, [eventId]);
 
   const handleUpdate = async (e) => {
@@ -210,6 +251,82 @@ export const AdminEventPage = () => {
               </button>
             </div>
           </div>
+
+          {/* Live Polling Section */}
+          {event?.status === 'active' && liveStats && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass p-6 rounded-xl mb-8 border-2 border-green-500/30 bg-green-500/5"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Activity className="text-green-400 animate-pulse" size={24} />
+                  <h2 className="text-2xl font-bold text-green-400">Live Polling</h2>
+                </div>
+                {lastUpdate && (
+                  <div className="flex items-center gap-2 text-green-300 text-sm">
+                    <Activity size={16} className="animate-pulse" />
+                    <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
+                <div className="glass p-4 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="text-primary-400" size={20} />
+                    <p className="text-dark-400 text-sm">Total Votes</p>
+                  </div>
+                  <p className="text-4xl font-bold text-primary-400">{liveStats.totalVotes}</p>
+                </div>
+                <div className="glass p-4 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="text-primary-400" size={20} />
+                    <p className="text-dark-400 text-sm">Participants</p>
+                  </div>
+                  <p className="text-4xl font-bold text-primary-400">{liveStats.event?.participants?.length || 0}</p>
+                </div>
+                <div className="glass p-4 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="text-primary-400" size={20} />
+                    <p className="text-dark-400 text-sm">Status</p>
+                  </div>
+                  <p className="text-2xl font-bold text-green-400">{liveStats.event?.status?.toUpperCase()}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold mb-3">Live Vote Counts</h3>
+                {liveStats.results && Object.values(liveStats.results).length > 0 ? (
+                  Object.values(liveStats.results)
+                    .sort((a, b) => b.voteCount - a.voteCount)
+                    .map((candidate, idx) => (
+                      <div key={candidate.candidateId || idx} className="flex items-center gap-4">
+                        <span className="text-xl font-bold text-primary-400 w-8">#{idx + 1}</span>
+                        <div className="flex-1">
+                          <div className="flex justify-between mb-1">
+                            <span className="font-medium">{candidate.candidateName}</span>
+                            <span className="text-primary-400 font-semibold">{candidate.voteCount} votes</span>
+                          </div>
+                          <div className="w-full h-3 bg-dark-700 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-primary-500 to-green-500"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${candidate.percentage}%` }}
+                              transition={{ duration: 0.5 }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-dark-400 w-16 text-right">{candidate.percentage}%</span>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-dark-400">No votes yet</p>
+                )}
+              </div>
+            </motion.div>
+          )}
 
           {/* Candidates Section */}
           <div className="mt-8 pt-8 border-t border-white/10">

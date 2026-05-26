@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { io } from 'socket.io-client';
-import { eventAPI, candidateAPI, voteAPI, faceVerificationAPI } from '../utils/api';
+import { eventAPI, candidateAPI, voteAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { CheckCircle, Users, Clock, Shield, AlertTriangle, ArrowLeft, AlertCircle } from 'lucide-react';
 
 export const VotingPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [event, setEvent] = useState(null);
   const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -19,12 +20,22 @@ export const VotingPage = () => {
   const socketRef = useRef(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
+  const [showVoteConfirmation, setShowVoteConfirmation] = useState(false);
 
   useEffect(() => {
     if (!eventId) {
       toast.error('Invalid event ID');
       navigate('/dashboard');
       return;
+    }
+
+    // Check if user is returning from verification
+    const verified = searchParams.get('verified');
+    if (verified === 'true') {
+      setFaceVerified(true);
+      toast.success('Face verified successfully');
+      // Remove the query param from URL
+      navigate(`/voting/${eventId}`, { replace: true });
     }
 
     loadEventData();
@@ -127,13 +138,18 @@ export const VotingPage = () => {
       return;
     }
 
-    // Face verification check disabled for hackathon demo
-    // const lowConfidence = faceStatus && faceStatus.identityConfidence < 70;
-    // if (!faceVerified || lowConfidence || faceStatus?.biometricAnomaly) {
-    //   toast.error('Your identity is not confidently verified. Please re-verify before voting.');
-    //   navigate('/face-verification');
-    //   return;
-    // }
+    // Show confirmation dialog
+    setShowVoteConfirmation(true);
+  };
+
+  const confirmVote = async () => {
+    setShowVoteConfirmation(false);
+
+    // Face verification check - now using live camera verification
+    if (!faceVerified) {
+      toast.error('Please verify your identity using the camera before voting.');
+      return;
+    }
 
     try {
       await voteAPI.castVote({
@@ -167,6 +183,7 @@ export const VotingPage = () => {
 
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+
 
   if (loading) {
     return (
@@ -316,44 +333,6 @@ export const VotingPage = () => {
           </motion.div>
         )}
 
-        {/* Face verification alerts disabled for hackathon demo */}
-        {/* {!faceVerified && !hasVoted && isActive && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-8 flex items-center gap-3"
-          >
-            <AlertCircle className="text-yellow-300" size={24} />
-            <div>
-              <p className="text-yellow-200">Face verification is required before voting.</p>
-              <button
-                onClick={() => navigate('/face-verification')}
-                className="text-primary-300 underline mt-2"
-              >
-                Go to face verification
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {faceStatus?.biometricAnomaly && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-8 flex items-center gap-3"
-          >
-            <AlertCircle className="text-red-400" size={24} />
-            <div>
-              <p className="text-red-200">Biometric anomaly detected for your verification profile.</p>
-              <button
-                onClick={() => navigate('/face-verification')}
-                className="text-primary-300 underline mt-2"
-              >
-                Re-verify now
-              </button>
-            </div>
-          </motion.div>
-        )} */}
 
         {!isActive && (
           <motion.div
@@ -418,15 +397,97 @@ export const VotingPage = () => {
           >
             Cancel
           </button>
-          <button
-            onClick={() => setShowConfirmation(false) || (selectedCandidate ? handleVote() : toast.error('Select a candidate'))}
-            disabled={!selectedCandidate || hasVoted || !isActive}
-            className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {hasVoted ? 'Already Voted' : 'Confirm Vote'}
-          </button>
+          {selectedCandidate && !faceVerified && !hasVoted && isActive && (
+            <button
+              onClick={() => navigate(`/face-verification/${eventId}`)}
+              className="btn-primary flex-1"
+            >
+              Verify Yourself
+            </button>
+          )}
+          {faceVerified && selectedCandidate && !hasVoted && isActive && (
+            <button
+              onClick={() => setShowConfirmation(false) || (selectedCandidate ? handleVote() : toast.error('Select a candidate'))}
+              className="btn-primary flex-1"
+            >
+              Confirm Vote
+            </button>
+          )}
+          {hasVoted && (
+            <button
+              disabled
+              className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Already Voted
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Vote Confirmation Modal */}
+      {showVoteConfirmation && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowVoteConfirmation(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="glass p-8 rounded-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <Shield className="text-primary-400 mx-auto mb-4" size={48} />
+              <h2 className="text-2xl font-bold mb-2">Confirm Your Vote</h2>
+              <p className="text-dark-300">You are about to vote for:</p>
+              <p className="text-xl font-semibold text-primary-400 mt-2">{selectedCandidate?.name}</p>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-3 text-sm">
+                <CheckCircle className="text-green-400" size={16} />
+                <span className="text-dark-300">Identity verification required</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <CheckCircle className="text-green-400" size={16} />
+                <span className="text-dark-300">Account age check (10 min minimum)</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <CheckCircle className="text-green-400" size={16} />
+                <span className="text-dark-300">Duplicate vote prevention</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <CheckCircle className="text-green-400" size={16} />
+                <span className="text-dark-300">Device fingerprinting active</span>
+              </div>
+            </div>
+
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+              <p className="text-yellow-300 text-sm">
+                <AlertTriangle className="inline mr-2" size={16} />
+                This action cannot be undone. Your vote will be permanently recorded.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowVoteConfirmation(false)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmVote}
+                className="btn-primary flex-1"
+              >
+                Confirm & Submit
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 };
