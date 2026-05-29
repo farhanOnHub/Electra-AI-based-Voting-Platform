@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Candidate from '../models/Candidate.js';
 import Event from '../models/Event.js';
 import path from 'path';
@@ -11,7 +12,9 @@ export const addCandidate = async (req, res) => {
     const { eventId, name, bio, position } = req.body;
     const image = req.file ? `/uploads/candidates/${req.file.filename}` : null;
 
-    const event = await Event.findById(eventId);
+    const event = mongoose.isValidObjectId(eventId)
+      ? await Event.findById(eventId)
+      : await Event.findOne({ eventCode: eventId?.toUpperCase() });
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }

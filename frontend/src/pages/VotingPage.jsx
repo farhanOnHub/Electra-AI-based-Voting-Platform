@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { io } from 'socket.io-client';
-import { eventAPI, candidateAPI, voteAPI } from '../utils/api';
+import { eventAPI, candidateAPI, voteAPI, faceVerificationAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { CheckCircle, Users, Clock, Shield, AlertTriangle, ArrowLeft, AlertCircle } from 'lucide-react';
 
@@ -78,7 +78,7 @@ export const VotingPage = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [eventId]);
+  }, [eventId, searchParams]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -348,45 +348,52 @@ export const VotingPage = () => {
         {/* Candidates Grid */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-6">Select a Candidate</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {candidates.map((candidate, idx) => (
-              <motion.button
-                key={candidate._id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
-                onClick={() => setSelectedCandidate(candidate)}
-                disabled={hasVoted}
-                className={`glass p-6 text-left rounded-xl transition-all transform hover:scale-105 ${
-                  selectedCandidate?._id === candidate._id
-                    ? 'ring-2 ring-primary-500 bg-primary-500/10'
-                    : ''
-                } ${hasVoted ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                {candidate.image && (
-                  <img
-                    src={candidate.image.startsWith('http') ? candidate.image : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${candidate.image}`}
-                    alt={candidate.name}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                    loading="eager"
-                  />
-                )}
-                
-                <h3 className="text-lg font-semibold mb-1">{candidate.name}</h3>
-                {candidate.position && (
-                  <p className="text-primary-400 text-sm mb-3">{candidate.position}</p>
-                )}
-                <p className="text-dark-300 text-sm mb-4">{candidate.bio}</p>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-dark-400">Votes: {candidate.voteCount}</span>
-                  {selectedCandidate?._id === candidate._id && !hasVoted && (
-                    <CheckCircle className="text-primary-400" size={20} />
+          {candidates.length === 0 ? (
+            <div className="glass p-8 rounded-xl text-center text-dark-300">
+              <p className="text-lg font-semibold mb-3">No candidates have been added yet.</p>
+              <p className="text-sm">Please ask the event organizer to add candidates before voting can begin.</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {candidates.map((candidate, idx) => (
+                <motion.button
+                  key={candidate._id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.1 }}
+                  onClick={() => setSelectedCandidate(candidate)}
+                  disabled={hasVoted}
+                  className={`glass p-6 text-left rounded-xl transition-all transform hover:scale-105 ${
+                    selectedCandidate?._id === candidate._id
+                      ? 'ring-2 ring-primary-500 bg-primary-500/10'
+                      : ''
+                  } ${hasVoted ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {candidate.image && (
+                    <img
+                      src={candidate.image.startsWith('http') ? candidate.image : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${candidate.image}`}
+                      alt={candidate.name}
+                      className="w-full h-48 object-cover rounded-lg mb-4"
+                      loading="eager"
+                    />
                   )}
-                </div>
-              </motion.button>
-            ))}
-          </div>
+                  
+                  <h3 className="text-lg font-semibold mb-1">{candidate.name}</h3>
+                  {candidate.position && (
+                    <p className="text-primary-400 text-sm mb-3">{candidate.position}</p>
+                  )}
+                  <p className="text-dark-300 text-sm mb-4">{candidate.bio}</p>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-dark-400">Votes: {candidate.voteCount}</span>
+                    {selectedCandidate?._id === candidate._id && !hasVoted && (
+                      <CheckCircle className="text-primary-400" size={20} />
+                    )}
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Vote Button */}
@@ -397,17 +404,24 @@ export const VotingPage = () => {
           >
             Cancel
           </button>
-          {selectedCandidate && !faceVerified && !hasVoted && isActive && (
+          {selectedCandidate && !faceVerified && !hasVoted && (
             <button
               onClick={() => navigate(`/face-verification/${eventId}`)}
               className="btn-primary flex-1"
             >
-              Verify Yourself
+              {isActive ? 'Verify Yourself' : 'Verify Now to Vote Later'}
             </button>
           )}
-          {faceVerified && selectedCandidate && !hasVoted && isActive && (
+          {faceVerified && selectedCandidate && !hasVoted && (
             <button
-              onClick={() => setShowConfirmation(false) || (selectedCandidate ? handleVote() : toast.error('Select a candidate'))}
+              onClick={() => {
+                if (!isActive) {
+                  toast.error('Event is not active yet. You can verify now and vote when the event starts.');
+                  return;
+                }
+                setShowConfirmation(false);
+                handleVote();
+              }}
               className="btn-primary flex-1"
             >
               Confirm Vote
@@ -422,6 +436,16 @@ export const VotingPage = () => {
             </button>
           )}
         </div>
+        {selectedCandidate && !faceVerified && !hasVoted && (
+          <div className="mt-4 text-sm text-yellow-300">
+            You must complete face verification before voting. Click the button above to verify your identity.
+          </div>
+        )}
+        {faceVerified && selectedCandidate && !hasVoted && !isActive && (
+          <div className="mt-4 text-sm text-blue-300">
+            You are verified. Voting will be available once the event is active.
+          </div>
+        )}
       </div>
 
       {/* Vote Confirmation Modal */}

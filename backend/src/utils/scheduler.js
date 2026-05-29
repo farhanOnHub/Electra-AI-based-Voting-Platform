@@ -1,6 +1,7 @@
 import Event from '../models/Event.js';
 import Vote from '../models/Vote.js';
 import mongoose from 'mongoose';
+import { deleteCachePattern } from './cache.js';
 
 const DEFAULT_INTERVAL_MS = 30 * 1000; // 30 seconds
 
@@ -58,6 +59,10 @@ export const startEventScheduler = (io, intervalMs = DEFAULT_INTERVAL_MS) => {
         } catch (emitErr) {
           console.error('Socket emit error on close:', emitErr);
         }
+      }
+
+      if (toStart.length > 0 || toClose.length > 0) {
+        await deleteCachePattern('events:');
       }
     } catch (error) {
       console.error('Scheduler tick error:', error);

@@ -30,6 +30,14 @@ export const castVote = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
+    if (event.requireFaceVerification) {
+      if (!user.faceVerified || !user.faceVerificationImage) {
+        return res.status(403).json({
+          message: 'Face verification is required before voting. Please verify your identity first.'
+        });
+      }
+    }
+
     // Check if maxVotes is set and reached
     if (event.maxVotes && event.totalVotes >= event.maxVotes) {
       return res.status(400).json({ message: 'Maximum votes reached for this event' });

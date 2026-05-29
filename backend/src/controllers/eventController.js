@@ -11,24 +11,44 @@ const generateEventCode = () => {
 
 export const createEvent = async (req, res) => {
   try {
-    const { title, description, startTime, endTime, position, bio, organizerName } = req.body;
+    const { title, description, startTime, endTime, position, bio, organizerName, maxVotes } = req.body;
     const banner = req.file ? `/uploads/events/${req.file.filename}` : req.body.banner;
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const now = new Date();
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: 'Invalid start or end time' });
+    }
+
+    if (end <= start) {
+      return res.status(400).json({ message: 'End time must be after start time' });
+    }
+
+    if (end <= now) {
+      return res.status(400).json({ message: 'End time must be in the future' });
+    }
+
+    const status = start <= now ? 'active' : 'upcoming';
 
     const event = new Event({
       title,
       description,
-      startTime,
-      endTime,
+      startTime: start,
+      endTime: end,
       banner,
       position,
       bio,
       organizer: req.userId,
       organizerName: organizerName || 'Organizer',
       eventCode: generateEventCode(),
-      status: 'upcoming'
+      status,
+      maxVotes: maxVotes || null
     });
 
     await event.save();
+    await deleteCachePattern('events:');
 
     res.status(201).json({
       message: 'Event created successfully',
@@ -133,7 +153,7 @@ export const getEventByCode = async (req, res) => {
 
 export const updateEvent = async (req, res) => {
   try {
-    const { title, description, startTime, endTime, status, isResultsVisible, position, bio } = req.body;
+    const { title, description, startTime, endTime, status, isResultsVisible, position, bio, maxVotes } = req.body;
     const banner = req.file ? `/uploads/events/${req.file.filename}` : req.body.banner;
 
     const event = await Event.findById(req.params.id);
@@ -146,8 +166,20 @@ export const updateEvent = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    Object.assign(event, { title, description, startTime, endTime, status, isResultsVisible, banner, position, bio });
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    if (startTime && endTime) {
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ message: 'Invalid start or end time' });
+      }
+      if (end <= start) {
+        return res.status(400).json({ message: 'End time must be after start time' });
+      }
+    }
+
+    Object.assign(event, { title, description, startTime: startTime ? start : event.startTime, endTime: endTime ? end : event.endTime, status, isResultsVisible, banner, position, bio, maxVotes: maxVotes || event.maxVotes });
     await event.save();
+    await deleteCachePattern('events:');
 
     res.json({
       message: 'Event updated successfully',
@@ -194,6 +226,8 @@ export const deleteEvent = async (req, res) => {
       )
     ]);
 
+    await deleteCachePattern('events:');
+
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {
     console.error('Error deleting event:', error);
@@ -235,6 +269,8 @@ export const joinEvent = async (req, res) => {
     } else {
       console.log('Event already in user joinedEvents');
     }
+
+    await deleteCachePattern('events:');
 
     res.json({
       message: 'Joined event successfully',
@@ -330,6 +366,7 @@ export const toggleResultsVisibility = async (req, res) => {
 
     event.isResultsVisible = !event.isResultsVisible;
     await event.save();
+    await deleteCachePattern('events:');
 
     res.json({
       message: `Results ${event.isResultsVisible ? 'made visible' : 'hidden'}`,

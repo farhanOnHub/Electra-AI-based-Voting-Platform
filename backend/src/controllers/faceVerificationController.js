@@ -1,5 +1,7 @@
 import User from '../models/User.js';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 // Real face verification using face-api.js descriptors
 const calculateEuclideanDistance = (descriptor1, descriptor2) => {
@@ -39,7 +41,24 @@ const detectBiometricAnomaly = (livenessScore, identityConfidence) => {
 export const captureFaceImage = async (req, res) => {
   try {
     const { imageData, faceDescriptor, livenessScore: frontendLivenessScore } = req.body;
-    const userId = req.userId;
+    const userId = req.userId || 'unknown';
+
+    // Log incoming request for debugging
+    try {
+      const logDir = path.resolve('logs');
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      const entry = {
+        timestamp: new Date().toISOString(),
+        route: 'captureFaceImage',
+        userId,
+        descriptorLength: Array.isArray(faceDescriptor) ? faceDescriptor.length : (faceDescriptor?.length ?? null),
+        imageDataSize: typeof imageData === 'string' ? imageData.length : null
+      };
+      fs.appendFileSync(path.join(logDir, 'face-debug.log'), JSON.stringify(entry) + '\n');
+      console.info('face-debug:', entry);
+    } catch (logErr) {
+      console.debug('Failed to write face debug log', logErr);
+    }
 
     if (!imageData) {
       return res.status(400).json({ message: 'Image data required' });
@@ -54,11 +73,13 @@ export const captureFaceImage = async (req, res) => {
     
     let identityConfidence = 100;
     let livenessScore = frontendLivenessScore || 75;
+    let distance = null;
 
     if (previousDescriptor) {
       // Compare face descriptors using Euclidean distance
-      const distance = calculateEuclideanDistance(previousDescriptor, faceDescriptor);
+      distance = calculateEuclideanDistance(previousDescriptor, faceDescriptor);
       identityConfidence = calculateIdentityConfidence(distance);
+      console.debug(`Face verification distance for user ${userId}:`, distance);
     }
 
     const biometricAnomaly = detectBiometricAnomaly(livenessScore, identityConfidence);
@@ -68,10 +89,39 @@ export const captureFaceImage = async (req, res) => {
         message: 'Face does not match your enrolled profile. Please try again with a live selfie.',
         identityConfidence,
         livenessScore,
-        biometricAnomaly
+        biometricAnomaly,
+        distance
       });
     }
 
+    // If this is the first time (no previous descriptor), store the descriptor
+    // and mark the user verified immediately (first-capture enrollment).
+    if (!previousDescriptor) {
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+          faceVerificationImage: faceDescriptor,
+          faceVerified: true,
+          faceVerificationDate: new Date(),
+          faceLivenessScore: livenessScore,
+          identityConfidence,
+          biometricAnomaly,
+          lastFaceVerificationAttempt: new Date()
+        },
+        { new: true }
+      );
+
+      return res.json({
+        message: 'Face captured and verified successfully (enrolled)',
+        faceVerified: true,
+        livenessScore,
+        identityConfidence,
+        biometricAnomaly,
+        distance
+      });
+    }
+
+    // Existing flow for users who already have an enrolled descriptor
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
@@ -91,7 +141,8 @@ export const captureFaceImage = async (req, res) => {
       faceVerified: true,
       livenessScore,
       identityConfidence,
-      biometricAnomaly
+      biometricAnomaly,
+      distance
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -125,6 +176,7 @@ export const verifyFaceBeforeVote = async (req, res) => {
     const identityConfidence = calculateIdentityConfidence(distance);
     const livenessScore = frontendLivenessScore || 75;
     const biometricAnomaly = detectBiometricAnomaly(livenessScore, identityConfidence);
+    console.debug(`Face verify-before-vote distance for user ${userId}:`, distance);
 
     const verified = identityConfidence >= 70 && livenessScore >= 55;
 
@@ -134,7 +186,8 @@ export const verifyFaceBeforeVote = async (req, res) => {
         verified: false,
         identityConfidence,
         livenessScore,
-        biometricAnomaly
+        biometricAnomaly,
+        distance
       });
     }
 
